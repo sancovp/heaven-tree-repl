@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heaven-tree-repl"
+version = "0.1.0"
+description = "Hierarchical Embodied Autonomously Validating Evolution Network Tree REPL"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "HEAVEN Development Team", email = "heaven@example.com"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers", 
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "black",
+    "flake8", 
+    "mypy",
+]
+
+[project.scripts]
+heaven-tree-repl = "heaven_tree_repl.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/heaven-tree-repl"
+Repository = "https://github.com/yourusername/heaven-tree-repl"
+Issues = "https://github.com/yourusername/heaven-tree-repl/issues"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
