@@ -89,13 +89,13 @@ class ExecutionEngineMixin:
                 result, success = self._meta_generate_mcp_server(final_args)
             elif function_name == "_meta_get_mcp_example_config":
                 result, success = self._meta_get_mcp_example_config(final_args)
-            # OmniTool Operations
+            # OmniTool Operations (async)
             elif function_name == "_omni_list_tools":
-                result, success = self._omni_list_tools(final_args)
+                result, success = await self._omni_list_tools(final_args)
             elif function_name == "_omni_get_tool_info":
-                result, success = self._omni_get_tool_info(final_args)
+                result, success = await self._omni_get_tool_info(final_args)
             elif function_name == "_omni_execute_tool":
-                result, success = self._omni_execute_tool(final_args)
+                result, success = await self._omni_execute_tool(final_args)
             else:
                 # Check if function exists as instance attribute
                 if function_name and hasattr(self, function_name):
