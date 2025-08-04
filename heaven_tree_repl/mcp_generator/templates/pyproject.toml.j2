@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{{ config.server_name }}"
+version = "{{ config.version }}"
+description = "{{ config.description }}"
+readme = "README.md"
+license = {text = "{{ config.license }}"}
+authors = [
+    {name = "{{ config.author }}", email = "{{ config.author_email }}"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers", 
+    "License :: OSI Approved :: {{ config.license }} License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = "{{ config.python_requires }}"
+dependencies = [
+    {% for dep in config.dependencies %}
+    "{{ dep }}",
+    {% endfor %}
+]
+
+[project.optional-dependencies]
+dev = [
+    {% for dep in config.dev_dependencies %}
+    "{{ dep }}",
+    {% endfor %}
+]
+
+[project.scripts]
+{{ config.server_name }}-server = "{{ config.get_package_name() }}.server:serve"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/{{ config.server_name }}"
+Repository = "https://github.com/yourusername/{{ config.server_name }}"
+Issues = "https://github.com/yourusername/{{ config.server_name }}/issues"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true

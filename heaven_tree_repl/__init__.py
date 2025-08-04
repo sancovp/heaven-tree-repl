@@ -21,6 +21,9 @@ from .execution_engine import ExecutionEngineMixin
 from .agent_management import AgentTreeReplMixin, UserTreeReplMixin, TreeReplFullstackMixin
 from .approval_system import ApprovalQueue
 
+# Import MCP generator
+from .mcp_generator import generate_mcp_from_config, generate_mcp_from_dict, TreeShellMCPConfig, MCPGenerator
+
 # Main TreeShell class combining all functionality
 class TreeShell(
     TreeShellBase,
@@ -114,4 +117,9 @@ __all__ = [
     "AgentTreeReplMixin",
     "UserTreeReplMixin",
     "TreeReplFullstackMixin",
+    # MCP Generator
+    "generate_mcp_from_config",
+    "generate_mcp_from_dict", 
+    "TreeShellMCPConfig",
+    "MCPGenerator",
 ]

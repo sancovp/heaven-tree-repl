@@ -39,7 +39,10 @@ class CommandHandlersMixin:
                     "menu": self._get_node_menu(self.current_position)
                 })
             else:
-                return self._build_response(result)
+                return self._build_response({
+                    "action": "execute",
+                    **result
+                })
                 
         else:
             # Navigate to option or execute with args

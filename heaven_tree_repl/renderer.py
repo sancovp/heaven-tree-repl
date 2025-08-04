@@ -47,6 +47,10 @@ def render_response(response: Dict[str, Any]) -> str:
         # Execution result
         content = _render_execution(response)
         
+    elif "result" in response and "execution" in response:
+        # This looks like an execution result (even without explicit action)
+        content = _render_execution(response)
+        
     elif action == "navigate":
         # Navigation result
         content = _render_navigation(response)
@@ -105,28 +109,50 @@ def _render_execution(response: Dict[str, Any]) -> str:
     
     # Execution header
     target = response.get("target", response.get("position", "Unknown"))
-    parts.append(f"# Executed at {target}")
     
-    # Result
+    # Check if this is an error result
     result = response.get("result", {})
-    if isinstance(result, dict):
-        if "result" in result:
-            # Nested result structure
-            actual_result = result["result"]
-            if isinstance(actual_result, dict):
-                parts.append("## Result:")
-                for key, value in actual_result.items():
-                    parts.append(f"- **{key}:** {value}")
-            else:
-                parts.append(f"**Result:** {actual_result}")
-        else:
-            # Direct result dict
-            parts.append("## Result:")
-            for key, value in result.items():
-                if key != "execution":  # Skip execution metadata
-                    parts.append(f"- **{key}:** {value}")
+    if isinstance(result, dict) and "error" in result:
+        # This is an error result - render as error
+        parts.append(f"# ❌ Execution Error at {target}")
+        parts.append(f"\n**Error:** {result['error']}")
+        
+        if "exception_type" in result:
+            parts.append(f"**Exception Type:** {result['exception_type']}")
+        
+        if "function_name" in result:
+            parts.append(f"**Function:** {result['function_name']}")
+            
+        if "args" in result and result["args"]:
+            parts.append(f"**Arguments:** {result['args']}")
+            
+        # Only show traceback if debugging is needed
+        if "traceback" in result:
+            parts.append(f"\n**Traceback:**\n```\n{result['traceback']}\n```")
+            
     else:
-        parts.append(f"**Result:** {result}")
+        # Normal successful execution
+        parts.append(f"# Executed at {target}")
+        
+        # Result
+        if isinstance(result, dict):
+            if "result" in result:
+                # Nested result structure
+                actual_result = result["result"]
+                if isinstance(actual_result, dict):
+                    parts.append("## Result:")
+                    for key, value in actual_result.items():
+                        parts.append(f"- **{key}:** {value}")
+                else:
+                    parts.append(f"**Result:** {actual_result}")
+            else:
+                # Direct result dict
+                parts.append("## Result:")
+                for key, value in result.items():
+                    if key != "execution":  # Skip execution metadata
+                        parts.append(f"- **{key}:** {value}")
+        else:
+            parts.append(f"**Result:** {result}")
     
     return "\n".join(parts)
 

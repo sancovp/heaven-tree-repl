@@ -31,68 +31,103 @@ class ExecutionEngineMixin:
             "step": self.step_counter
         }
         
-        # Execute based on function_name
+        # Execute based on function_name with proper exception handling
         function_name = node.get("function_name")
         result = None
+        success = True
         
-        # Check if this is an async function and handle accordingly
-        async_function = self._get_async_function(function_name)
-        if async_function:
-            result = await async_function(final_args)
-            # Async functions should return (result, success) tuple - handled below in tuple check
-        elif function_name == "_test_add":
-            result, success = self._test_add(final_args)
-        elif function_name == "_test_multiply":
-            result, success = self._test_multiply(final_args)
-        elif function_name == "_execute_pathway_template":
-            result, success = self._execute_pathway_template(final_args, node)
-        # Meta Operations
-        elif function_name == "_meta_save_var":
-            result, success = self._meta_save_var(final_args)
-        elif function_name == "_meta_get_var":
-            result, success = self._meta_get_var(final_args)
-        elif function_name == "_meta_append_to_var":
-            result, success = self._meta_append_to_var(final_args)
-        elif function_name == "_meta_delete_var":
-            result, success = self._meta_delete_var(final_args)
-        elif function_name == "_meta_list_vars":
-            result, success = self._meta_list_vars(final_args)
-        elif function_name == "_meta_save_to_file":
-            result, success = self._meta_save_to_file(final_args)
-        elif function_name == "_meta_load_from_file":
-            result, success = self._meta_load_from_file(final_args)
-        elif function_name == "_meta_export_session":
-            result, success = self._meta_export_session(final_args)
-        elif function_name == "_meta_session_stats":
-            result, success = self._meta_session_stats(final_args)
-        # Tree Structure CRUD Operations
-        elif function_name == "_meta_add_node":
-            result, success = self._meta_add_node(final_args)
-        elif function_name == "_meta_update_node":
-            result, success = self._meta_update_node(final_args)
-        elif function_name == "_meta_delete_node":
-            result, success = self._meta_delete_node(final_args)
-        elif function_name == "_meta_list_nodes":
-            result, success = self._meta_list_nodes(final_args)
-        elif function_name == "_meta_get_node":
-            result, success = self._meta_get_node(final_args)
-        else:
-            # Check if function exists as instance attribute
-            if function_name and hasattr(self, function_name):
-                func = getattr(self, function_name)
-                if callable(func):
-                    result = func(final_args)
-                else:
-                    result = f"Function {function_name} is not callable"
-                    success = False
+        try:
+            # Check if this is an async function and handle accordingly
+            async_function = self._get_async_function(function_name)
+            if async_function:
+                result = await async_function(final_args)
+                # Async functions should return (result, success) tuple - handled below in tuple check
+            elif function_name == "_test_add":
+                result, success = self._test_add(final_args)
+            elif function_name == "_test_multiply":
+                result, success = self._test_multiply(final_args)
+            elif function_name == "_execute_pathway_template":
+                result, success = self._execute_pathway_template(final_args, node)
+            # Meta Operations
+            elif function_name == "_meta_save_var":
+                result, success = self._meta_save_var(final_args)
+            elif function_name == "_meta_get_var":
+                result, success = self._meta_get_var(final_args)
+            elif function_name == "_meta_append_to_var":
+                result, success = self._meta_append_to_var(final_args)
+            elif function_name == "_meta_delete_var":
+                result, success = self._meta_delete_var(final_args)
+            elif function_name == "_meta_list_vars":
+                result, success = self._meta_list_vars(final_args)
+            elif function_name == "_meta_save_to_file":
+                result, success = self._meta_save_to_file(final_args)
+            elif function_name == "_meta_load_from_file":
+                result, success = self._meta_load_from_file(final_args)
+            elif function_name == "_meta_export_session":
+                result, success = self._meta_export_session(final_args)
+            elif function_name == "_meta_session_stats":
+                result, success = self._meta_session_stats(final_args)
+            # Tree Structure CRUD Operations
+            elif function_name == "_meta_add_node":
+                result, success = self._meta_add_node(final_args)
+            elif function_name == "_meta_update_node":
+                result, success = self._meta_update_node(final_args)
+            elif function_name == "_meta_delete_node":
+                result, success = self._meta_delete_node(final_args)
+            elif function_name == "_meta_list_nodes":
+                result, success = self._meta_list_nodes(final_args)
+            elif function_name == "_meta_get_node":
+                result, success = self._meta_get_node(final_args)
+            # MCP Generator Operations
+            elif function_name == "_meta_init_mcp_config":
+                result, success = self._meta_init_mcp_config(final_args)
+            elif function_name == "_meta_show_mcp_config":
+                result, success = self._meta_show_mcp_config(final_args)
+            elif function_name == "_meta_update_mcp_config":
+                result, success = self._meta_update_mcp_config(final_args)
+            elif function_name == "_meta_generate_mcp_server":
+                result, success = self._meta_generate_mcp_server(final_args)
+            elif function_name == "_meta_get_mcp_example_config":
+                result, success = self._meta_get_mcp_example_config(final_args)
+            # OmniTool Operations
+            elif function_name == "_omni_list_tools":
+                result, success = self._omni_list_tools(final_args)
+            elif function_name == "_omni_get_tool_info":
+                result, success = self._omni_get_tool_info(final_args)
+            elif function_name == "_omni_execute_tool":
+                result, success = self._omni_execute_tool(final_args)
             else:
-                # Generic execution - store args as result for now
-                result = f"Executed {function_name or 'action'} with {final_args}"
-                success = True
+                # Check if function exists as instance attribute
+                if function_name and hasattr(self, function_name):
+                    func = getattr(self, function_name)
+                    if callable(func):
+                        result = func(final_args)
+                    else:
+                        result = {"error": f"Function {function_name} is not callable"}
+                        success = False
+                else:
+                    # Generic execution - store args as result for now
+                    result = f"Executed {function_name or 'action'} with {final_args}"
+                    success = True
+                    
+        except Exception as e:
+            # Capture any unhandled exceptions and return as error result
+            import traceback
+            error_details = {
+                "error": f"Function execution failed: {str(e)}",
+                "function_name": function_name,
+                "exception_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
+                "args": final_args
+            }
+            result = error_details
+            success = False
         
-        # Handle single return value (assume success)
+        # Handle single return value (assume success unless already set to False)
         if not isinstance(result, tuple):
-            success = True
+            # Only assume success if success wasn't already set to False (e.g., by exception handler)
+            if success is True:
+                success = True
         else:
             result, success = result
         

@@ -298,3 +298,211 @@ class MetaOperationsMixin:
             "exists": True
         }
         return result, True
+    
+    # === MCP Generator Operations ===
+    
+    def _meta_init_mcp_config(self, final_args: dict) -> tuple:
+        """Initialize MCP generator configuration."""
+        from .mcp_generator import TreeShellMCPConfig
+        
+        # Get current app details to pre-populate config
+        app_name = final_args.get("app_name") or getattr(self, 'graph_config', {}).get('app_id', 'treeshell-app')
+        import_path = final_args.get("import_path", "my_app")
+        factory_function = final_args.get("factory_function", "main")
+        description = final_args.get("description") or f"TreeShell MCP server for {app_name}"
+        
+        # Create default config
+        config_dict = {
+            "app_name": app_name,
+            "import_path": import_path,
+            "factory_function": factory_function,
+            "description": description,
+            "version": "0.1.0",
+            "author": "TreeShell User",
+            "author_email": "user@example.com"
+        }
+        
+        # Store in session variables
+        self.session_vars["mcp_config"] = config_dict
+        
+        result = {
+            "initialized": True,
+            "config": config_dict,
+            "stored_in_session": "mcp_config"
+        }
+        return result, True
+    
+    def _meta_update_mcp_config(self, final_args: dict) -> tuple:
+        """Update MCP generator configuration."""
+        if "mcp_config" not in self.session_vars:
+            return {"error": "MCP config not initialized. Run init_mcp_config first."}, False
+        
+        updates = final_args.get("updates", {})
+        if not updates:
+            return {"error": "Updates dictionary required"}, False
+        
+        # Apply updates
+        self.session_vars["mcp_config"].update(updates)
+        
+        result = {
+            "updated": True,
+            "config": self.session_vars["mcp_config"],
+            "applied_updates": updates
+        }
+        return result, True
+    
+    def _meta_show_mcp_config(self, final_args: dict) -> tuple:
+        """Show current MCP generator configuration."""
+        if "mcp_config" not in self.session_vars:
+            return {"error": "MCP config not initialized. Run init_mcp_config first."}, False
+        
+        config = self.session_vars["mcp_config"]
+        result = {
+            "current_config": config,
+            "ready_to_generate": self._meta_validate_mcp_config(config)
+        }
+        return result, True
+    
+    def _meta_generate_mcp_server(self, final_args: dict) -> tuple:
+        """Generate complete MCP server package."""
+        if "mcp_config" not in self.session_vars:
+            return {"error": "MCP config not initialized. Run init_mcp_config first."}, False
+        
+        output_dir = final_args.get("output_dir", f"./{self.session_vars['mcp_config']['app_name']}-mcp")
+        
+        try:
+            from .mcp_generator import TreeShellMCPConfig, MCPGenerator
+            
+            # Create config object
+            config = TreeShellMCPConfig(**self.session_vars["mcp_config"])
+            
+            # Generate MCP server
+            generator = MCPGenerator(config)
+            generated_files = generator.generate_all(output_dir)
+            
+            result = {
+                "generated": True,
+                "output_directory": output_dir,
+                "files_created": list(generated_files.keys()),
+                "total_files": len(generated_files),
+                "server_name": config.server_name,
+                "tool_name": config.tool_name,
+                "next_steps": [
+                    f"cd {output_dir}",
+                    "pip install -e .",
+                    "Add to your MCP client configuration"
+                ]
+            }
+            return result, True
+            
+        except Exception as e:
+            return {"error": f"Failed to generate MCP server: {str(e)}"}, False
+    
+    def _meta_validate_mcp_config(self, config: dict) -> bool:
+        """Validate MCP configuration is ready for generation."""
+        required_fields = ["app_name", "import_path", "factory_function", "description"]
+        return all(field in config and config[field] for field in required_fields)
+    
+    def _meta_get_mcp_example_config(self, final_args: dict) -> tuple:
+        """Get example MCP configuration."""
+        from .mcp_generator import TreeShellMCPConfig
+        
+        config_obj = TreeShellMCPConfig(
+            app_name="example-app",
+            import_path="my_example_app", 
+            factory_function="main",
+            description="Example TreeShell application"
+        )
+        
+        example = config_obj.generate_example_config()
+        
+        result = {
+            "example_config": example,
+            "usage": "Use update_mcp_config with 'updates' parameter to modify current config"
+        }
+        return result, True
+    
+    # === OmniTool Operations ===
+    
+    async def _omni_list_tools(self, final_args: dict) -> tuple:
+        """List all available HEAVEN tools through OmniTool."""
+        try:
+            # Import OmniTool from HEAVEN framework
+            from heaven_base.utils.omnitool import omnitool
+            
+            # Get list of all available tools
+            result_str = await omnitool(list_tools=True)
+            
+            # Parse the result (omnitool returns string representation of dict)
+            import ast
+            result_dict = ast.literal_eval(result_str)
+            
+            tools = result_dict.get('available_tools', [])
+            
+            return {
+                "success": True,
+                "total_tools": len(tools),
+                "available_tools": sorted(tools),
+                "usage": "Use get_tool_info to learn about specific tools"
+            }, True
+            
+        except Exception as e:
+            return {
+                "error": f"Failed to list tools: {str(e)}",
+                "note": "Make sure HEAVEN framework is available"
+            }, False
+    
+    async def _omni_get_tool_info(self, final_args: dict) -> tuple:
+        """Get detailed information about a specific HEAVEN tool."""
+        tool_name = final_args.get("tool_name")
+        if not tool_name:
+            return {"error": "tool_name parameter required"}, False
+        
+        try:
+            from heaven_base.utils.omnitool import omnitool
+            
+            # Get tool information
+            result_str = await omnitool(tool_name, get_tool_info=True)
+            
+            return {
+                "success": True,
+                "tool_name": tool_name,
+                "tool_info": result_str
+            }, True
+            
+        except Exception as e:
+            return {
+                "error": f"Failed to get tool info for '{tool_name}': {str(e)}",
+                "available_actions": ["Check tool name spelling", "Use list_tools to see available tools"]
+            }, False
+    
+    async def _omni_execute_tool(self, final_args: dict) -> tuple:
+        """Execute a HEAVEN tool with parameters."""
+        tool_name = final_args.get("tool_name")
+        parameters = final_args.get("parameters", {})
+        
+        if not tool_name:
+            return {"error": "tool_name parameter required"}, False
+        
+        try:
+            from heaven_base.utils.omnitool import omnitool
+            
+            # Execute the tool with parameters
+            result_str = await omnitool(tool_name, parameters=parameters)
+            
+            return {
+                "success": True,
+                "tool_name": tool_name,
+                "parameters": parameters,
+                "result": result_str
+            }, True
+            
+        except Exception as e:
+            return {
+                "error": f"Failed to execute tool '{tool_name}': {str(e)}",
+                "parameters_used": parameters,
+                "suggestions": [
+                    "Check tool name and parameters",
+                    "Use get_tool_info to see correct parameter format"
+                ]
+            }, False

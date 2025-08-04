@@ -94,7 +94,9 @@ class TreeShellBase:
             "options": {
                 "1": "0.0.1",  # manage_pathways
                 "2": "0.0.2",  # meta_operations
-                "3": "0.0.3"   # session_info
+                "3": "0.0.3",  # mcp_generator
+                "4": "0.0.4",  # omnitool
+                "5": "0.0.5"   # session_info
             }
         }
         
@@ -252,6 +254,111 @@ class TreeShellBase:
             "signature": "get_node(coordinate: str) -> dict",
             "function_name": "_meta_get_node",
             "args_schema": {"coordinate": "str"}
+        }
+        
+        # === MCP Generator Section (0.0.3) ===
+        nodes["0.0.3"] = {
+            "type": "Menu",
+            "prompt": "🚀 MCP Server Generator",
+            "description": "Generate MCP servers from TreeShell applications",
+            "signature": "mcp_generator() -> generation_options",
+            "options": {
+                "1": "0.0.3.1",  # init_mcp_config
+                "2": "0.0.3.2",  # show_mcp_config
+                "3": "0.0.3.3",  # update_mcp_config
+                "4": "0.0.3.4",  # generate_mcp_server
+                "5": "0.0.3.5",  # get_mcp_example_config
+            }
+        }
+        
+        nodes["0.0.3.1"] = {
+            "type": "Callable",
+            "prompt": "Initialize MCP Config",
+            "description": "Create new MCP server configuration",
+            "signature": "init_mcp_config(app_name: str, import_path: str, factory_function: str, description: str) -> dict",
+            "function_name": "_meta_init_mcp_config",
+            "args_schema": {
+                "app_name": "str", 
+                "import_path": "str", 
+                "factory_function": "str", 
+                "description": "str"
+            }
+        }
+        
+        nodes["0.0.3.2"] = {
+            "type": "Callable",
+            "prompt": "Show MCP Config",
+            "description": "Display current MCP server configuration",
+            "signature": "show_mcp_config() -> dict",
+            "function_name": "_meta_show_mcp_config"
+        }
+        
+        nodes["0.0.3.3"] = {
+            "type": "Callable",
+            "prompt": "Update MCP Config",
+            "description": "Modify MCP server configuration settings",
+            "signature": "update_mcp_config(updates: dict) -> dict",
+            "function_name": "_meta_update_mcp_config",
+            "args_schema": {"updates": "dict"}
+        }
+        
+        nodes["0.0.3.4"] = {
+            "type": "Callable",
+            "prompt": "Generate MCP Server",
+            "description": "Create complete MCP server package",
+            "signature": "generate_mcp_server(output_dir: str) -> dict",
+            "function_name": "_meta_generate_mcp_server",
+            "args_schema": {"output_dir": "str"}
+        }
+        
+        nodes["0.0.3.5"] = {
+            "type": "Callable",
+            "prompt": "Get Example Config",
+            "description": "Show example MCP configuration format",
+            "signature": "get_mcp_example_config() -> dict",
+            "function_name": "_meta_get_mcp_example_config"
+        }
+        
+        # === OmniTool Section (0.0.4) ===
+        nodes["0.0.4"] = {
+            "type": "Menu",
+            "prompt": "🛠️ OmniTool Access",
+            "description": "Access to HEAVEN's 96+ tool ecosystem",
+            "signature": "omnitool() -> tool_options",
+            "options": {
+                "1": "0.0.4.1",  # list_tools
+                "2": "0.0.4.2",  # get_tool_info
+                "3": "0.0.4.3",  # execute_tool
+            }
+        }
+        
+        nodes["0.0.4.1"] = {
+            "type": "Callable",
+            "prompt": "List All Tools",
+            "description": "Show all available HEAVEN tools",
+            "signature": "list_tools() -> dict",
+            "function_name": "_omni_list_tools"
+        }
+        
+        nodes["0.0.4.2"] = {
+            "type": "Callable",
+            "prompt": "Get Tool Info",
+            "description": "Get detailed information about a specific tool",
+            "signature": "get_tool_info(tool_name: str) -> dict",
+            "function_name": "_omni_get_tool_info",
+            "args_schema": {"tool_name": "str"}
+        }
+        
+        nodes["0.0.4.3"] = {
+            "type": "Callable",
+            "prompt": "Execute Tool",
+            "description": "Execute a HEAVEN tool with parameters",
+            "signature": "execute_tool(tool_name: str, parameters: dict) -> dict",
+            "function_name": "_omni_execute_tool",
+            "args_schema": {
+                "tool_name": "str",
+                "parameters": "dict"
+            }
         }
         
         # Convert provided nodes to coordinate system starting at 0.1
