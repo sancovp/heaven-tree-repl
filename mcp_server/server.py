@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, '/home/GOD/heaven-framework-repo')
 sys.path.insert(0, '/home/GOD/heaven-tree-repl')
 
-from heaven_tree_repl import TreeShell
+from heaven_tree_repl import TreeShell, render_response
 from conversation_chat_app import main as get_conversation_shell
 
 
@@ -75,12 +75,14 @@ class TreeShellMCPServer:
             # Handle command through TreeShell
             result = await self.shell.handle_command(command)
             
+            # Render the result using TreeShell's renderer
+            rendered_output = render_response(result)
+            
             return {
                 "success": True,
                 "command": command,
-                "result": result,
-                "current_node": getattr(self.shell, 'current_node_path', 'unknown'),
-                "available_options": getattr(result, 'get', lambda x: {})('options', {})
+                "rendered_output": rendered_output,
+                "raw_result": result  # Keep raw result for debugging if needed
             }
             
         except Exception as e:
