@@ -10,7 +10,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class CommandHandlersMixin:
     """Mixin class providing command handling functionality."""
     
-    def _handle_numerical_selection(self, option: int, args_str: str) -> dict:
+    async def _handle_numerical_selection(self, option: int, args_str: str) -> dict:
         """Handle numerical menu selection."""
         current_node = self._get_current_node()
         
@@ -31,7 +31,7 @@ class CommandHandlersMixin:
             except json.JSONDecodeError:
                 return {"error": "Invalid JSON arguments"}
                 
-            result, success = self._execute_action(self.current_position, args)
+            result, success = await self._execute_action(self.current_position, args)
             if success:
                 return self._build_response({
                     "action": "execute",

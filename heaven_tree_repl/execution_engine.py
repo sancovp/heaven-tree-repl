@@ -11,7 +11,7 @@ from typing import Dict, List, Any, Optional, Tuple
 class ExecutionEngineMixin:
     """Mixin class providing execution engine functionality."""
     
-    def _execute_action(self, node_coord: str, args: dict = None) -> Tuple[dict, bool]:
+    async def _execute_action(self, node_coord: str, args: dict = None) -> Tuple[dict, bool]:
         """Execute action at given coordinate."""
         if args is None:
             args = {}
@@ -38,7 +38,7 @@ class ExecutionEngineMixin:
         # Check if this is an async function and handle accordingly
         async_function = self._get_async_function(function_name)
         if async_function:
-            result = asyncio.run(async_function(final_args))
+            result = await async_function(final_args)
             # Async functions should return (result, success) tuple - handled below in tuple check
         elif function_name == "_test_add":
             result, success = self._test_add(final_args)
@@ -133,7 +133,7 @@ class ExecutionEngineMixin:
         except (ValueError, TypeError):
             return {"error": "Invalid arguments for multiply"}, False
     
-    def handle_command(self, command: str) -> dict:
+    async def handle_command(self, command: str) -> dict:
         """Main command handler - process any input."""
         command = command.strip()
         if not command:
@@ -156,7 +156,7 @@ class ExecutionEngineMixin:
             args_str = parts[1].strip()
             
             if cmd_part.isdigit():
-                return self._handle_numerical_selection(int(cmd_part), args_str)
+                return await self._handle_numerical_selection(int(cmd_part), args_str)
             else:
                 return {"error": f"Invalid command format: {command}"}
         
@@ -167,7 +167,7 @@ class ExecutionEngineMixin:
         
         # Handle numerical menu selection
         if cmd.isdigit():
-            return self._handle_numerical_selection(int(cmd), args_str)
+            return await self._handle_numerical_selection(int(cmd), args_str)
             
         # Handle universal commands
         if cmd == "jump":

@@ -55,7 +55,7 @@ class TreeShellMCPServer:
             print(f"Warning: Could not initialize conversation shell: {e}")
             self.shell = None
     
-    def run_conversation_shell(self, command: str) -> dict:
+    async def run_conversation_shell(self, command: str) -> dict:
         """
         Run a command in the conversation management TreeShell.
         
@@ -73,7 +73,7 @@ class TreeShellMCPServer:
         
         try:
             # Handle command through TreeShell
-            result = self.shell.handle_command(command)
+            result = await self.shell.handle_command(command)
             
             return {
                 "success": True,
@@ -169,7 +169,7 @@ async def serve() -> None:
             match name:
                 case TreeShellTools.RUN_CONVERSATION_SHELL.value:
                     command = arguments.get("command", "")
-                    result = treeshell_server.run_conversation_shell(command)
+                    result = await treeshell_server.run_conversation_shell(command)
                 
                 case _:
                     raise ValueError(f"Unknown tool: {name}")
