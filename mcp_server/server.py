@@ -172,12 +172,18 @@ async def serve() -> None:
                 case TreeShellTools.RUN_CONVERSATION_SHELL.value:
                     command = arguments.get("command", "")
                     result = await treeshell_server.run_conversation_shell(command)
+                    
+                    # Return only the rendered output, not the full JSON
+                    if result.get("success"):
+                        output_text = result.get("rendered_output", "No output available")
+                    else:
+                        output_text = f"❌ Error: {result.get('error', 'Unknown error')}"
                 
                 case _:
                     raise ValueError(f"Unknown tool: {name}")
             
             return [
-                TextContent(type="text", text=json.dumps(result, indent=2))
+                TextContent(type="text", text=output_text)
             ]
         
         except Exception as e:
