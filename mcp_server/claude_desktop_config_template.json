@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "heaven-treeshell": {
+      "command": "python",
+      "args": ["-m", "mcp_server"],
+      "env": {
+        "HEAVEN_DATA_DIR": "/path/to/your/conversation/data",
+        "OPENAI_API_KEY": "your_openai_api_key_here"
+      }
+    }
+  }
+}

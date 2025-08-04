@@ -39,6 +39,7 @@ class ExecutionEngineMixin:
         async_function = self._get_async_function(function_name)
         if async_function:
             result = asyncio.run(async_function(final_args))
+            # Async functions should return (result, success) tuple - handled below in tuple check
         elif function_name == "_test_add":
             result, success = self._test_add(final_args)
         elif function_name == "_test_multiply":
@@ -76,9 +77,18 @@ class ExecutionEngineMixin:
         elif function_name == "_meta_get_node":
             result, success = self._meta_get_node(final_args)
         else:
-            # Generic execution - store args as result for now
-            result = f"Executed {function_name or 'action'} with {final_args}"
-            success = True
+            # Check if function exists as instance attribute
+            if function_name and hasattr(self, function_name):
+                func = getattr(self, function_name)
+                if callable(func):
+                    result = func(final_args)
+                else:
+                    result = f"Function {function_name} is not callable"
+                    success = False
+            else:
+                # Generic execution - store args as result for now
+                result = f"Executed {function_name or 'action'} with {final_args}"
+                success = True
         
         # Handle single return value (assume success)
         if not isinstance(result, tuple):

@@ -51,6 +51,10 @@ def render_response(response: Dict[str, Any]) -> str:
         # Navigation result
         content = _render_navigation(response)
         
+    elif action == "jump":
+        # Jump result - same as navigation
+        content = _render_navigation(response)
+        
     elif action == "jump_execute":
         # Jump with execution
         content = _render_jump_execute(response)
