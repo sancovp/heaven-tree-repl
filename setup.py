@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="heaven-tree-repl",
-    version="0.1.2",
+    version="0.1.3",
     author="HEAVEN Development Team",
     author_email="heaven@example.com",
     description="Hierarchical Embodied Autonomously Validating Evolution Network Tree REPL",
