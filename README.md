@@ -81,14 +81,18 @@ agent_shell = AgentTreeShell(config, session_id="agent_001",
                             approval_callback=user_shell._receive_agent_approval_request)
 ```
 
-## Roadmap
+## Development Roadmap
 
-See the `docs/roadmap/` directory for detailed specifications of planned features:
+See `docs/DEVELOPMENT_ROADMAP.md` for the complete phased development plan:
 
-- **Crystal Forest Business Game**: Progressive gameplay mechanics
-- **XP Achievement System**: Experience points and achievement tracking
-- **Zone-Based Progression**: Skill-based progression through development zones
-- **Workflow Status System**: Quarantine and approval workflows
+1. **Phase 1**: Prompt Engineering Agent Prototype (Current)
+2. **Phase 2**: General Adaptor Layer 
+3. **Phase 3**: Universal Agent App Generator
+4. **Phase 4**: Game Mechanics Integration
+5. **Phase 5**: Enhanced Base Library
+6. **Phase 6**: Advanced Integrations (MCP, Full HEAVEN)
+
+Future game mechanics specifications are in `docs/future_implementations/`.
 
 ## Development
 
