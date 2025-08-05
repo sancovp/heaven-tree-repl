@@ -31,10 +31,13 @@ def render_response(response: Dict[str, Any]) -> str:
     # Start with crystal ball tree header and position info
     base_header = f"<<[🔮‍🌳]>> You are now visiting position `{position}` in the {app_id} tree space for the domain: {domain}."
     
+    # Build header with help message for main menu
+    help_msg = " | 💡 New here? Use `jump 0.2.6` for Computational Model overview" if position == "0" else ""
+    
     if display_brief and display_brief.has_content():
-        header = f"{base_header} {display_brief.to_display_string()}"
+        header = f"{base_header} {display_brief.to_display_string()}{help_msg}"
     else:
-        header = base_header
+        header = f"{base_header}{help_msg}"
     
     # Handle different response types
     action = response.get("action", "menu")
