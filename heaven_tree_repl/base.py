@@ -125,6 +125,11 @@ class TreeShellBase:
                 "7": "0.0.2.7",  # load_from_file
                 "8": "0.0.2.8",  # export_session
                 "9": "0.0.2.9",  # session_stats
+                "10": "0.0.2.10",  # add_node
+                "11": "0.0.2.11",  # update_node
+                "12": "0.0.2.12",  # delete_node
+                "13": "0.0.2.13",  # list_nodes
+                "14": "0.0.2.14",  # get_node
             }
         }
         
