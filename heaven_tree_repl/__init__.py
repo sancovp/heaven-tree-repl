@@ -56,6 +56,178 @@ class TreeShell(
         }
         
         return pathways_info, True
+    
+    # === Documentation Functions ===
+    
+    def _docs_execution_syntax(self, final_args: dict) -> tuple:
+        """Show execution syntax documentation."""
+        docs = """📋 **Execution Syntax Guide**
+
+When executing callable nodes, use these argument patterns:
+
+**With Arguments (Dictionary):**
+• `1 {"name": "Alice", "age": 30}` → calls func({"name": "Alice", "age": 30})
+• `1 {"message": "Hello World"}` → calls func({"message": "Hello World"})
+
+**Empty Arguments (Empty Dictionary):**  
+• `1 {}` → calls func({}) - function receives empty dict
+
+**No Arguments (Empty Parentheses):**
+• `1 ()` → calls func() - function called with zero arguments
+• Use this for functions like os.getcwd() that take no parameters
+
+**Examples:**
+• Math function: `1 {"a": 5, "b": 3}`
+• Status check: `1 {}`  
+• Get directory: `1 ()`
+
+**Jump with Arguments:**
+• `jump 0.1.5 {"data": "value"}` → navigate and execute with args
+• `jump 0.1.5 ()` → navigate and execute with no args"""
+        
+        return docs, True
+    
+    def _docs_callable_nodes(self, final_args: dict) -> tuple:
+        """Show callable nodes documentation."""
+        docs = """🔧 **Callable Nodes Guide**
+
+Create callable nodes using add_node (0.0.2.10) with 3 approaches:
+
+**1. Import Existing Function:**
+```json
+{
+  "type": "Callable",
+  "prompt": "Get Directory", 
+  "function_name": "_get_dir",
+  "is_async": false,
+  "import_path": "os",
+  "import_object": "getcwd"
+}
+```
+
+**2. Dynamic Function Code:**
+```json
+{
+  "type": "Callable",
+  "prompt": "System Info",
+  "function_name": "_sys_info", 
+  "is_async": false,
+  "function_code": "def _sys_info(args): import os; return f'Dir: {os.getcwd()}', True"
+}
+```
+
+**3. Use Existing Function:**
+```json
+{
+  "type": "Callable",
+  "prompt": "List Variables",
+  "function_name": "_meta_list_vars",
+  "is_async": false
+}
+```
+
+**Required Fields:**
+• `type`: "Callable"
+• `prompt`: Display name
+• `function_name`: Internal function name
+• `is_async`: true/false for async handling
+
+**Execution:** Use syntax from 0.2.1 (Execution Syntax)"""
+        
+        return docs, True
+    
+    def _docs_navigation(self, final_args: dict) -> tuple:
+        """Show navigation documentation.""" 
+        docs = """🧭 **Navigation Commands**
+
+**Basic Navigation:**
+• `1`, `2`, `3` → Navigate to menu options
+• `back` → Go back one level
+• `menu` → Go to nearest menu (find closest .0 node)
+• `exit` → Exit TreeShell
+
+**Jump Commands:**
+• `jump 0.1.5` → Navigate directly to coordinate
+• `jump 0.1.5 {"arg": "value"}` → Navigate and execute with args
+• `jump 0.1.5 ()` → Navigate and execute with no args
+
+**Chain Execution:**
+• `chain 0.1.1 {} -> 0.1.2 {"data": "test"}` → Execute sequence
+• Results from step1 available as variables in step2
+
+**Universal Commands Available Everywhere:**
+• jump, chain, build_pathway, save_emergent_pathway
+• follow_established_pathway, show_execution_history
+• analyze_patterns, crystallize_pattern, rsi_insights
+
+**Coordinate System:**
+• Every position has implicit .0 (menu/introspect)  
+• 0 = root, 0.0 = settings, 0.1 = domain, 0.2 = docs
+• Navigate hierarchically: 0 → 0.1 → 0.1.3 → 0.1.3.2"""
+        
+        return docs, True
+    
+    def _docs_pathways(self, final_args: dict) -> tuple:
+        """Show pathway system documentation."""
+        docs = """🛤️ **Pathway System**
+
+**Recording Pathways:**
+• `build_pathway` → Start recording your actions
+• Navigate and execute commands (they get recorded)
+• `save_emergent_pathway mypath` → Save recorded pathway
+
+**From History:**
+• `save_emergent_pathway_from_history mypath [0,1,2]` → Create from specific steps
+• `save_emergent_pathway_from_history mypath [0-5]` → Create from range
+• `show_execution_history` → See available steps
+
+**Using Pathways:**
+• `follow_established_pathway` → Show all pathways
+• `follow_established_pathway mypath {"arg": "value"}` → Execute with args
+• `follow_established_pathway domain=math` → Query by domain
+• `follow_established_pathway tags=arithmetic` → Query by tags
+
+**Analysis (RSI System):**
+• `analyze_patterns` → Find optimization opportunities
+• `crystallize_pattern mypattern` → Create reusable pattern
+• `rsi_insights` → Show learning insights
+
+**Pathway Management:** 
+• Navigate to 0.0.1 for pathway management interface
+• View saved pathways, templates, and ontology data"""
+        
+        return docs, True
+    
+    def _docs_meta_operations(self, final_args: dict) -> tuple:
+        """Show meta operations documentation."""
+        docs = """⚙️ **Meta Operations (0.0.2)**
+
+**Session Variables:**
+• `save_var` → Store value: {"name": "myvar", "value": "data"}
+• `get_var` → Retrieve: {"name": "myvar"}  
+• `append_to_var` → Add to list/string: {"name": "myvar", "value": "more"}
+• `delete_var` → Remove: {"name": "myvar"}
+• `list_vars` → Show all variables: {}
+
+**File Operations:**
+• `save_to_file` → Write var to file: {"filename": "data.json", "var_name": "myvar"}
+• `load_from_file` → Read file to var: {"filename": "data.json", "var_name": "loaded"}
+• `export_session` → Save complete session: {"filename": "session.json"}
+
+**Tree Structure CRUD:**
+• `add_node` → Create new nodes (see 0.2.2 for details)
+• `update_node` → Modify existing: {"coordinate": "0.1.5", "updates": {...}}
+• `delete_node` → Remove: {"coordinate": "0.1.5"}
+• `list_nodes` → Show nodes: {"pattern": "0.1"} (optional filter)
+• `get_node` → View details: {"coordinate": "0.1.5"}
+
+**Session Info:**
+• `session_stats` → Memory usage, variables, nodes count: {}
+
+**MCP Generator:** Navigate to 0.0.3 for MCP server generation
+**OmniTool Access:** Navigate to 0.0.4 for HEAVEN tool ecosystem"""
+        
+        return docs, True
 
 
 class AgentTreeShell(TreeShell, AgentTreeReplMixin):

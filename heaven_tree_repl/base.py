@@ -81,7 +81,8 @@ class TreeShellBase:
             "signature": "menu() -> navigation_options",
             "options": {
                 "1": "0.0",  # settings
-                "2": "0.1"   # domain
+                "2": "0.1",  # domain
+                "3": "0.2"   # docs
             }
         }
         
@@ -364,6 +365,66 @@ class TreeShellBase:
                 "tool_name": "str",
                 "parameters": "dict"
             }
+        }
+        
+        # === Documentation Section (0.2) ===
+        nodes["0.2"] = {
+            "type": "Menu",
+            "prompt": "📚 Documentation",
+            "description": "TreeShell documentation and command reference. To read a section, use the number + {} (e.g., '2 {}' to read Execution Syntax). Each section contains detailed guides and examples.",
+            "signature": "docs() -> documentation_options",
+            "options": {
+                "1": "0.2.1",  # execution_syntax
+                "2": "0.2.2",  # callable_nodes
+                "3": "0.2.3",  # navigation
+                "4": "0.2.4",  # pathways
+                "5": "0.2.5"   # meta_operations
+            }
+        }
+        
+        # Execution Syntax Documentation
+        nodes["0.2.1"] = {
+            "type": "Callable",
+            "prompt": "Execution Syntax",
+            "description": "How to execute nodes with different argument patterns",
+            "signature": "execution_syntax() -> syntax_guide",
+            "function_name": "_docs_execution_syntax"
+        }
+        
+        # Callable Nodes Documentation  
+        nodes["0.2.2"] = {
+            "type": "Callable",
+            "prompt": "Callable Nodes",
+            "description": "How to create and use callable nodes with 3 implementation approaches",
+            "signature": "callable_nodes() -> callable_guide",
+            "function_name": "_docs_callable_nodes"
+        }
+        
+        # Navigation Documentation
+        nodes["0.2.3"] = {
+            "type": "Callable",
+            "prompt": "Navigation Commands",
+            "description": "Jump, chain, pathways, and other navigation commands",
+            "signature": "navigation() -> navigation_guide", 
+            "function_name": "_docs_navigation"
+        }
+        
+        # Pathways Documentation
+        nodes["0.2.4"] = {
+            "type": "Callable",
+            "prompt": "Pathway System",
+            "description": "Recording, saving, and executing pathway templates",
+            "signature": "pathways() -> pathway_guide",
+            "function_name": "_docs_pathways"
+        }
+        
+        # Meta Operations Documentation
+        nodes["0.2.5"] = {
+            "type": "Callable",
+            "prompt": "Meta Operations",
+            "description": "Session management, variables, and tree structure operations",
+            "signature": "meta_operations() -> meta_guide",
+            "function_name": "_docs_meta_operations"
         }
         
         # Convert provided nodes to coordinate system starting at 0.1
