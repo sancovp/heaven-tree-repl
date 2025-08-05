@@ -327,8 +327,10 @@ Ready to continue this conversation!"""
     shell._load_conversation = _load_conversation
     shell._search_conversations = _search_conversations
     
-    response = await shell.handle_command("")
-    print(render_response(response))
+    # Only print when run directly, not when imported
+    if __name__ == "__main__":
+        response = await shell.handle_command("")
+        print(render_response(response))
     
     # Return the shell for manual testing
     return shell

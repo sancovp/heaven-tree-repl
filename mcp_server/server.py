@@ -38,9 +38,8 @@ class TreeShellMCPServer:
         """Initialize the TreeShell MCP server"""
         # Initialize the conversation shell
         self.shell = None
-        self._initialize_shell()
     
-    def _initialize_shell(self):
+    async def _initialize_shell(self):
         """Initialize the conversation management shell"""
         try:
             # Set HEAVEN_DATA_DIR if not set
@@ -48,8 +47,8 @@ class TreeShellMCPServer:
                 os.environ['HEAVEN_DATA_DIR'] = '/tmp/heaven_data'
                 os.makedirs('/tmp/heaven_data', exist_ok=True)
             
-            # Get the conversation shell (TreeShell instance)
-            self.shell = get_conversation_shell()
+            # Get the conversation shell (TreeShell instance) - now async
+            self.shell = await get_conversation_shell()
             
         except Exception as e:
             print(f"Warning: Could not initialize conversation shell: {e}")
@@ -65,6 +64,9 @@ class TreeShellMCPServer:
         Returns:
             Dict with command result
         """
+        if not self.shell:
+            await self._initialize_shell()
+        
         if not self.shell:
             return {
                 "success": False,
