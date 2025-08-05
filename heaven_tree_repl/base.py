@@ -378,7 +378,8 @@ class TreeShellBase:
                 "2": "0.2.2",  # callable_nodes
                 "3": "0.2.3",  # navigation
                 "4": "0.2.4",  # pathways
-                "5": "0.2.5"   # meta_operations
+                "5": "0.2.5",  # meta_operations
+                "6": "0.2.6"   # computational_model
             }
         }
         
@@ -425,6 +426,15 @@ class TreeShellBase:
             "description": "Session management, variables, and tree structure operations",
             "signature": "meta_operations() -> meta_guide",
             "function_name": "_docs_meta_operations"
+        }
+        
+        # Computational Model Documentation
+        nodes["0.2.6"] = {
+            "type": "Callable",
+            "prompt": "Computational Model",
+            "description": "How TreeShell achieves Turing completeness through self-modification and agent delegation",
+            "signature": "computational_model() -> computational_guide",
+            "function_name": "_docs_computational_model"
         }
         
         # Convert provided nodes to coordinate system starting at 0.1

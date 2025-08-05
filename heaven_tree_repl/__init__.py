@@ -228,6 +228,60 @@ Create callable nodes using add_node (0.0.2.10) with 3 approaches:
 **OmniTool Access:** Navigate to 0.0.4 for HEAVEN tool ecosystem"""
         
         return docs, True
+    
+    def _docs_computational_model(self, final_args: dict) -> tuple:
+        """Show computational model documentation."""
+        docs = """🧠 **Computational Model**
+
+TreeShell achieves Turing completeness through three architectural layers:
+
+**1. Self-Modification (CRUD Operations)**
+• Tree structure operations allow runtime system evolution
+• `add_node`, `update_node`, `delete_node` modify computational capabilities
+• System can rewrite its own components and create new pathways
+• Example: Agent creates a new workflow by adding connected callable nodes
+
+**2. Hierarchical Agent Delegation**
+```
+FullstackTreeShell (orchestrator)
+  ↓ spawns & manages
+UserTreeShell (human approval layer)  
+  ↓ spawns & monitors
+AgentTreeShell (restricted execution environment)
+```
+
+• Each layer has different capabilities and restrictions
+• Approval workflows create computational gates
+• Quarantine system provides sandboxed execution
+• Nested delegation enables complex multi-agent systems
+
+**3. LLM-Powered Control Flow**
+• AI agents provide arbitrary logical reasoning capabilities
+• Natural language instructions → computational decisions
+• If/then/else logic through agent reasoning: "if result contains error, retry with different parameters"
+• While loops through pathway repetition: "keep processing until condition met"
+• Dynamic branching: agents choose execution paths based on context
+
+**Workflow Programming Language:**
+TreeShell becomes a programming language where:
+• **Nodes** = functions/procedures
+• **Coordinates** = memory addresses  
+• **Chains** = execution sequences with data flow
+• **Pathways** = stored programs/procedures
+• **Session variables** = persistent state
+• **Tree CRUD** = self-modifying code capabilities
+• **Agent reasoning** = dynamic control flow
+
+**Example Turing-Complete Workflow:**
+1. Agent analyzes data and creates processing nodes
+2. Builds chain execution pipeline with conditional logic  
+3. Records successful patterns as reusable pathways
+4. System evolves by adding new capabilities through CRUD
+5. Higher-level agents orchestrate multiple sub-agents
+
+This creates an adaptive computational substrate where intelligent agents can dynamically build, modify, and orchestrate computational systems that extend their own capabilities."""
+        
+        return docs, True
 
 
 class AgentTreeShell(TreeShell, AgentTreeReplMixin):
