@@ -79,10 +79,19 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
     Humans can launch agents and approve/reject their workflows.
     """
     
-    def __init__(self, graph_config: dict = None, parent_approval_callback=None):
-        # Use agent management config if no config provided
-        if graph_config is None:
+    def __init__(self, config: dict = None, parent_approval_callback=None):
+        # Handle nested config structure
+        if config is None:
+            # Use default agent management hub
             graph_config = self._get_user_interface_config()
+        elif "graph" in config:
+            # Merge app config into graph config
+            graph_config = config["graph"].copy()
+            if "app" in config:
+                graph_config.update(config["app"])
+        else:
+            # Legacy: assume config is graph config
+            graph_config = config
         
         TreeShell.__init__(self, graph_config)
         self.__init_user_features__(parent_approval_callback)
@@ -93,8 +102,8 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
     Complete fullstack TreeShell supporting nested human-agent interactions.
     """
     
-    def __init__(self, graph_config: dict = None, parent_approval_callback=None):
-        UserTreeShell.__init__(self, graph_config, parent_approval_callback)
+    def __init__(self, config: dict = None, parent_approval_callback=None):
+        UserTreeShell.__init__(self, config, parent_approval_callback)
         self.__init_fullstack_features__(parent_approval_callback)
 
 

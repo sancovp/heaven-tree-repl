@@ -170,51 +170,74 @@ class UserTreeReplMixin:
                     "description": "Human interface for managing AI agents and workflows",
                     "signature": "hub() -> management_options",
                     "options": {
-                        "1": "0.1",  # agent_management
-                        "2": "0.2",  # workflow_approvals
-                        "3": "0.3",  # session_management
-                        "4": "0.4"   # system_stats
+                        "1": "0.1",  # conversations
+                        "2": "0.2",  # agent_management
+                        "3": "0.3",  # workflow_approvals
+                        "4": "0.4",  # session_management
+                        "5": "0.5"   # system
                     }
                 },
                 "0.1": {
                     "type": "Menu",
-                    "prompt": "🤖 Agent Management",
-                    "description": "Launch and manage AI agents",
-                    "signature": "agent_management() -> agent_options",
+                    "prompt": "💬 Conversations",
+                    "description": "Chat and conversation management",
+                    "signature": "conversations() -> conversation_options",
                     "options": {
-                        "1": "0.1.1",  # launch_math_agent
-                        "2": "0.1.2",  # launch_text_agent  
-                        "3": "0.1.3",  # launch_custom_agent
-                        "4": "0.1.4"   # list_active_agents
+                        # Conversation subgraph will be added here
                     }
                 },
                 "0.2": {
+                    "type": "Menu",
+                    "prompt": "🤖 Agent Management",
+                    "description": "Configure and manage AI agents",
+                    "signature": "agent_management() -> agent_options",
+                    "options": {
+                        "1": "0.2.1",  # agents
+                        "2": "0.2.2",  # tools  
+                        "3": "0.2.3"   # prompts
+                    }
+                },
+                "0.2.1": {
+                    "type": "Menu",
+                    "prompt": "Agents",
+                    "description": "Manage agent configurations",
+                    "signature": "agents() -> agent_configs",
+                    "options": {}
+                },
+                "0.2.2": {
+                    "type": "Menu",
+                    "prompt": "Tools", 
+                    "description": "Manage agent tools",
+                    "signature": "tools() -> tool_configs",
+                    "options": {}
+                },
+                "0.2.3": {
+                    "type": "Menu",
+                    "prompt": "Prompts",
+                    "description": "Manage agent prompts",
+                    "signature": "prompts() -> prompt_configs", 
+                    "options": {}
+                },
+                "0.3": {
                     "type": "Menu", 
                     "prompt": "✅ Workflow Approvals",
                     "description": "Review and approve agent-generated workflows",
                     "signature": "approvals() -> approval_options",
                     "options": {
-                        "1": "0.2.1",  # view_pending_approvals
-                        "2": "0.2.2",  # approve_workflow_action
-                        "3": "0.2.3",  # reject_workflow_action
-                        "4": "0.2.4"   # view_approved_workflows
+                        "1": "0.3.1",  # view_pending_approvals
+                        "2": "0.3.2",  # approve_workflow_action
+                        "3": "0.3.3",  # reject_workflow_action
+                        "4": "0.3.4"   # view_approved_workflows
                     }
                 },
-                "0.1.1": {
-                    "type": "Callable",
-                    "prompt": "Launch Math Agent",
-                    "description": "Start a new mathematical operations agent",
-                    "signature": "launch_math_agent() -> agent_session",
-                    "function_name": "_launch_math_agent"
-                },
-                "0.2.1": {
+                "0.3.1": {
                     "type": "Callable",
                     "prompt": "View Pending Approvals",
                     "description": "Show all workflows awaiting human approval",
                     "signature": "view_pending() -> approval_list",
                     "function_name": "_view_pending_approvals"
                 },
-                "0.2.2": {
+                "0.3.2": {
                     "type": "Callable",
                     "prompt": "Approve Workflow",
                     "description": "Approve a quarantined agent workflow",
@@ -223,44 +246,72 @@ class UserTreeReplMixin:
                     "args_schema": {
                         "approval_id": "str"
                     }
+                },
+                "0.3.3": {
+                    "type": "Callable",
+                    "prompt": "Reject Workflow",
+                    "description": "Reject a quarantined agent workflow",
+                    "signature": "reject_workflow(approval_id: str) -> rejection_result",
+                    "function_name": "_reject_workflow_action",
+                    "args_schema": {
+                        "approval_id": "str"
+                    }
+                },
+                "0.3.4": {
+                    "type": "Callable",
+                    "prompt": "View Approved Workflows",
+                    "description": "Show all approved workflows",
+                    "signature": "view_approved() -> approved_list",
+                    "function_name": "_view_approved_workflows"
+                },
+                "0.4": {
+                    "type": "Menu",
+                    "prompt": "📊 Sessions",
+                    "description": "Manage active and historical sessions",
+                    "signature": "sessions() -> session_options",
+                    "options": {}
+                },
+                "0.5": {
+                    "type": "Menu",
+                    "prompt": "⚙️ System",
+                    "description": "System settings and monitoring",
+                    "signature": "system() -> system_options",
+                    "options": {}
                 }
             }
         }
     
-    def _launch_math_agent(self, args: dict = None) -> dict:
-        """Launch a mathematical operations agent."""
-        # Load math agent configuration
-        math_config = self._get_math_agent_config()
+    def _reject_workflow_action(self, args: dict) -> dict:
+        """Reject a workflow by approval ID."""
+        approval_id = args.get("approval_id")
+        if not approval_id:
+            return {"error": "approval_id required"}, False
         
-        # Create agent session - would need to be implemented by the main class
-        # This is a placeholder for the interface
-        session_id = uuid.uuid4().hex[:8]
+        rejected = self.approval_queue.reject_workflow(approval_id)
+        if not rejected:
+            return {"error": f"Approval ID {approval_id} not found"}, False
         
         return {
-            "agent_type": "mathematical_operations",
-            "session_id": session_id,
-            "status": "ACTIVE",
-            "message": f"Math agent {session_id} launched successfully"
-        }
+            "action": "workflow_rejected",
+            "approval_id": approval_id,
+            "message": f"Workflow rejected"
+        }, True
     
-    def _get_math_agent_config(self):
-        """Get configuration for math agents."""
-        # This would load from the math_app_config.json
-        try:
-            with open('/home/GOD/tree_repl/math_app_config.json', 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            # Fallback basic config
+    def _view_approved_workflows(self, args: dict = None) -> dict:
+        """Show all approved workflows."""
+        approved = self.approval_queue.list_approved()
+        
+        if not approved:
             return {
-                "app_id": "math_agent",
-                "nodes": {
-                    "root": {
-                        "type": "Menu",
-                        "prompt": "Math Operations",
-                        "options": {"basic": "basic_ops"}
-                    }
-                }
-            }
+                "approved_count": 0,
+                "message": "No approved workflows"
+            }, True
+        
+        return {
+            "approved_count": len(approved),
+            "approved_workflows": approved,
+            "message": f"{len(approved)} approved workflows"
+        }, True
     
     def _receive_agent_approval_request(self, workflow_data):
         """Receive approval request from agent."""
@@ -275,7 +326,7 @@ class UserTreeReplMixin:
         
         return approval_id
     
-    def _view_pending_approvals(self, args: dict = None) -> dict:
+    def _view_pending_approvals(self, args: dict = None) -> tuple:
         """Show all pending workflow approvals."""
         pending = self.approval_queue.list_pending()
         
@@ -283,23 +334,23 @@ class UserTreeReplMixin:
             return {
                 "pending_count": 0,
                 "message": "No workflows awaiting approval"
-            }
+            }, True
         
         return {
             "pending_count": len(pending),
             "pending_approvals": pending,
             "message": f"{len(pending)} workflows awaiting approval"
-        }
+        }, True
     
-    def _approve_workflow_action(self, args: dict) -> dict:
+    def _approve_workflow_action(self, args: dict) -> tuple:
         """Approve a workflow by approval ID."""
         approval_id = args.get("approval_id")
         if not approval_id:
-            return {"error": "approval_id required"}
+            return {"error": "approval_id required"}, False
         
         approved = self.approval_queue.approve_workflow(approval_id)
         if not approved:
-            return {"error": f"Approval ID {approval_id} not found"}
+            return {"error": f"Approval ID {approval_id} not found"}, False
         
         # Notify the agent session
         session_id = approved["session_id"]
@@ -313,7 +364,7 @@ class UserTreeReplMixin:
             "coordinate": approved["coordinate"],
             "session_id": session_id,
             "message": f"Workflow '{approved['pathway_name']}' approved for agent {session_id}"
-        }
+        }, True
 
 
 class TreeReplFullstackMixin:

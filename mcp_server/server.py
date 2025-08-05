@@ -72,18 +72,10 @@ class TreeShellMCPServer:
             }
         
         try:
-            # Handle command through TreeShell
+            # Handle command through TreeShell - let the shell handle its own rendering
             result = await self.shell.handle_command(command)
             
-            # Render the result using TreeShell's renderer
-            rendered_output = render_response(result)
-            
-            return {
-                "success": True,
-                "command": command,
-                "rendered_output": rendered_output,
-                "raw_result": result  # Keep raw result for debugging if needed
-            }
+            return result
             
         except Exception as e:
             return {
@@ -173,11 +165,11 @@ async def serve() -> None:
                     command = arguments.get("command", "")
                     result = await treeshell_server.run_conversation_shell(command)
                     
-                    # Return only the rendered output, not the full JSON
-                    if result.get("success"):
-                        output_text = result.get("rendered_output", "No output available")
-                    else:
+                    # Return the result as-is from the shell
+                    if isinstance(result, dict) and "error" in result:
                         output_text = f"❌ Error: {result.get('error', 'Unknown error')}"
+                    else:
+                        output_text = str(result)
                 
                 case _:
                     raise ValueError(f"Unknown tool: {name}")

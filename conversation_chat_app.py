@@ -12,14 +12,14 @@ Uses both heaven_response_utils and heaven_conversation_utils.
 """
 
 import asyncio
-from heaven_tree_repl import TreeShell, render_response
+from heaven_tree_repl import UserTreeShell, render_response
 from heaven_base import HeavenAgentConfig, ProviderEnum, completion_runner
 from heaven_base.langgraph.foundation import HeavenState
 from heaven_base.utils.heaven_response_utils import extract_heaven_response, extract_history_id_from_result
 from heaven_base.utils.heaven_conversation_utils import start_chat, continue_chat, load_chat, list_chats, search_chats, get_latest_history
 
 
-def main():
+async def main():
     config = {
         "app_id": "heaven_conversation_chat",
         "domain": "conversation", 
@@ -80,7 +80,7 @@ def main():
     }
     
     # Create shell and state
-    shell = TreeShell(config)
+    shell = UserTreeShell(config)
     
     # Global state for current conversation
     current_conversation = {
@@ -327,23 +327,12 @@ Ready to continue this conversation!"""
     shell._load_conversation = _load_conversation
     shell._search_conversations = _search_conversations
     
-    print("🎉 HEAVEN Conversation Chat App")
-    print("=" * 35)
-    print("Commands:")
-    print("1. start_chat     - Start new conversation")
-    print("2. continue_chat  - Continue current conversation")
-    print("3. list_conversations - Show recent conversations")
-    print("4. load_conversation - Switch to existing conversation")
-    print("5. search_conversations - Search by title/tags")
-    print()
-    print("Example usage:")
-    print("shell.handle_command('jump 0.1.1')  # Go to start_chat")
-    print('shell.handle_command(\'1 {"title": "My Chat", "message": "Hello", "tags": "test"}\')  # Start chat')
-    print()
+    response = await shell.handle_command("")
+    print(render_response(response))
     
     # Return the shell for manual testing
     return shell
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
