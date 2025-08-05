@@ -463,9 +463,8 @@ class TreeShellBase:
             
         menu_options = {}
         
-        # Universal options
-        menu_options["0"] = "introspect (description & signature)"
-        menu_options["1"] = "execute (run with current args)"
+        # Universal options - 0 shows description, 1 executes
+        menu_options["1"] = "execute"
         
         # Node-specific options
         options = node.get("options", {})
@@ -496,6 +495,8 @@ class TreeShellBase:
         
         return {
             "prompt": node.get("prompt", f"Node {node_coord}"),
+            "description": node.get("description", "No description available"),
+            "signature": node.get("signature", "No signature available"),
             "menu_options": menu_options,
             "universal_commands": universal_commands,
             "node_type": node.get("type"),

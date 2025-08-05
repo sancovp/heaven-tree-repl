@@ -189,6 +189,26 @@ class MetaOperationsMixin:
         if "args_schema" not in node_data:
             node_data["args_schema"] = {}
             
+        # Handle function code if provided for Callable nodes
+        if node_data["type"] == "Callable" and "function_code" in node_data:
+            function_name = node_data.get("function_name")
+            function_code = node_data.get("function_code")
+            
+            if function_name and function_code:
+                try:
+                    # Create function from code string
+                    exec_globals = {"__builtins__": __builtins__}
+                    exec(function_code, exec_globals)
+                    
+                    # Register the function
+                    if function_name in exec_globals:
+                        setattr(self, function_name, exec_globals[function_name])
+                    else:
+                        return {"error": f"Function {function_name} not found in provided code"}, False
+                        
+                except Exception as e:
+                    return {"error": f"Failed to compile function code: {str(e)}"}, False
+        
         # Add the node
         self.nodes[coordinate] = node_data.copy()
         

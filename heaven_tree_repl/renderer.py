@@ -85,6 +85,7 @@ def _render_menu(response: Dict[str, Any]) -> str:
     
     # Menu description
     description = response.get("description", "No description available")
+    signature = response.get("signature", "")
     
     # Menu options
     menu_options = response.get("menu_options", {})
@@ -94,9 +95,14 @@ def _render_menu(response: Dict[str, Any]) -> str:
     
     actions_text = "\n".join(actions) if actions else "  No actions available"
     
+    # Build description section
+    desc_section = f"Description: {description}"
+    if signature and signature != "No signature available":
+        desc_section += f"\nArgs: {signature}"
+    
     return f"""# {node_id} Menu
 
-Description: {description}
+{desc_section}
 
 Actions:[
 {actions_text}
