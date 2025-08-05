@@ -219,7 +219,7 @@ class TreeShellBase:
         nodes["0.0.2.10"] = {
             "type": "Callable",
             "prompt": "Add Node",
-            "description": "Create a new node in the tree structure",
+            "description": "Create new tree nodes. 3 ways for Callable nodes: 1) Import existing: {'import_path': 'module.path', 'import_object': 'function_name'} 2) Dynamic code: {'function_code': 'def _my_func(args): return \"result\", True'} 3) Use existing function: just {'function_name': '_existing_func'}. All Callable nodes need 'type', 'prompt', 'function_name', 'is_async' (true/false).",
             "signature": "add_node(coordinate: str, node_data: dict) -> bool",
             "function_name": "_meta_add_node",
             "args_schema": {"coordinate": "str", "node_data": "dict"}

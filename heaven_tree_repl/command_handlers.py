@@ -27,7 +27,10 @@ class CommandHandlersMixin:
         elif option == 1:
             # Execute current node
             try:
-                args = json.loads(args_str) if args_str else {}
+                if args_str == "()":
+                    args = "()"  # Special case: () means no-args
+                else:
+                    args = json.loads(args_str) if args_str else {}
             except json.JSONDecodeError:
                 return {"error": "Invalid JSON arguments"}
                 
@@ -56,8 +59,11 @@ class CommandHandlersMixin:
                 # If args provided, execute at target
                 if args_str:
                     try:
-                        args = json.loads(args_str)
-                        result, success = self._execute_action(target_coord, args)
+                        if args_str == "()":
+                            args = "()"  # Special case: () means no-args
+                        else:
+                            args = json.loads(args_str)
+                        result, success = await self._execute_action(target_coord, args)
                         if success:
                             return self._build_response({
                                 "action": "execute_at_target",
@@ -81,7 +87,7 @@ class CommandHandlersMixin:
             else:
                 return {"error": f"Invalid option: {option}"}
     
-    def _handle_jump(self, args_str: str) -> dict:
+    async def _handle_jump(self, args_str: str) -> dict:
         """Handle jump command."""
         parts = args_str.split(None, 1)
         if not parts:
@@ -100,8 +106,11 @@ class CommandHandlersMixin:
         # If args provided, execute immediately
         if args_str:
             try:
-                args = json.loads(args_str)
-                result, success = self._execute_action(target_coord, args)
+                if args_str == "()":
+                    args = "()"  # Special case: () means no-args
+                else:
+                    args = json.loads(args_str)
+                result, success = await self._execute_action(target_coord, args)
                 if success:
                     return self._build_response({
                         "action": "jump_execute", 
@@ -120,7 +129,7 @@ class CommandHandlersMixin:
                 "menu": self._get_node_menu(target_coord)
             })
     
-    def _handle_chain(self, args_str: str) -> dict:
+    async def _handle_chain(self, args_str: str) -> dict:
         """Handle chain command - sequential execution."""
         if not args_str:
             return {"error": "chain requires sequence specification"}
@@ -136,7 +145,10 @@ class CommandHandlersMixin:
             step_args_str = parts[1] if len(parts) > 1 else "{}"
             
             try:
-                step_args = json.loads(step_args_str)
+                if step_args_str == "()":
+                    step_args = "()"  # Special case: () means no-args
+                else:
+                    step_args = json.loads(step_args_str)
             except json.JSONDecodeError:
                 return {"error": f"Invalid JSON in step {i+1}: {step_args_str}"}
                 
@@ -144,7 +156,7 @@ class CommandHandlersMixin:
                 return {"error": f"Target coordinate {target_coord} not found in step {i+1}"}
                 
             # Execute step
-            result, success = self._execute_action(target_coord, step_args)
+            result, success = await self._execute_action(target_coord, step_args)
             if not success:
                 return {"error": f"Step {i+1} failed: {result}"}
                 

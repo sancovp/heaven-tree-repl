@@ -101,7 +101,11 @@ class ExecutionEngineMixin:
                 if function_name and hasattr(self, function_name):
                     func = getattr(self, function_name)
                     if callable(func):
-                        result = func(final_args)
+                        # Check if user wants no-args execution with "()" string syntax
+                        if final_args == "()":
+                            result = func()  # Call with no arguments
+                        else:
+                            result = func(final_args)  # Call with arguments (dict)
                     else:
                         result = {"error": f"Function {function_name} is not callable"}
                         success = False
@@ -140,9 +144,10 @@ class ExecutionEngineMixin:
         self.session_vars[step_result_key] = result
         self.session_vars["last_result"] = result
         
-        # Store individual args for reference
-        for arg_key, arg_value in final_args.items():
-            self.session_vars[f"step{self.step_counter}_{arg_key}"] = arg_value
+        # Store individual args for reference (only if final_args is a dict)
+        if isinstance(final_args, dict):
+            for arg_key, arg_value in final_args.items():
+                self.session_vars[f"step{self.step_counter}_{arg_key}"] = arg_value
             
         self.step_counter += 1
         
@@ -206,9 +211,9 @@ class ExecutionEngineMixin:
             
         # Handle universal commands
         if cmd == "jump":
-            return self._handle_jump(args_str)
+            return await self._handle_jump(args_str)
         elif cmd == "chain":
-            return self._handle_chain(args_str)
+            return await self._handle_chain(args_str)
         elif cmd == "build_pathway":
             return self._handle_build_pathway()
         elif cmd == "save_emergent_pathway":

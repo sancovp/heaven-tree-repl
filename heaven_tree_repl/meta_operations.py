@@ -161,7 +161,7 @@ class MetaOperationsMixin:
     # === Tree Structure CRUD Operations ===
     
     def _meta_add_node(self, final_args: dict) -> tuple:
-        """Add a new node to the tree structure."""
+        """Add a new node to the tree structure with multiple callable options."""
         coordinate = final_args.get("coordinate")
         node_data = final_args.get("node_data")
         
@@ -189,25 +189,79 @@ class MetaOperationsMixin:
         if "args_schema" not in node_data:
             node_data["args_schema"] = {}
             
-        # Handle function code if provided for Callable nodes
-        if node_data["type"] == "Callable" and "function_code" in node_data:
+        # Handle Callable nodes with three different approaches
+        if node_data["type"] == "Callable":
             function_name = node_data.get("function_name")
-            function_code = node_data.get("function_code")
+            is_async = node_data.get("is_async")
             
-            if function_name and function_code:
+            if not function_name:
+                return {"error": "Callable nodes require 'function_name' field"}, False
+            if is_async is None:
+                return {"error": "Callable nodes require 'is_async' field (true/false)"}, False
+            
+            # Approach 1: Import from existing module
+            if "import_path" in node_data and "import_object" in node_data:
+                import_path = node_data["import_path"]
+                import_object = node_data["import_object"]
+                
                 try:
-                    # Create function from code string
-                    exec_globals = {"__builtins__": __builtins__}
+                    # Dynamic import: from import_path import import_object
+                    module = __import__(import_path, fromlist=[import_object])
+                    imported_func = getattr(module, import_object)
+                    
+                    # Register the imported function based on async flag
+                    if is_async:
+                        self.register_async_function(function_name, imported_func)
+                    else:
+                        setattr(self, function_name, imported_func)
+                    
+                    result_detail = f"imported {import_object} from {import_path} ({'async' if is_async else 'sync'})"
+                    
+                except ImportError as e:
+                    return {"error": f"Failed to import {import_object} from {import_path}: {str(e)}"}, False
+                except AttributeError as e:
+                    return {"error": f"Object {import_object} not found in {import_path}: {str(e)}"}, False
+                except Exception as e:
+                    return {"error": f"Import failed: {str(e)}"}, False
+            
+            # Approach 2: Execute function code dynamically
+            elif "function_code" in node_data:
+                function_code = node_data["function_code"]
+                
+                try:
+                    # Create function from code string with enhanced globals
+                    exec_globals = {
+                        "__builtins__": __builtins__,
+                        "self": self,  # Allow access to shell instance
+                    }
                     exec(function_code, exec_globals)
                     
-                    # Register the function
+                    # Register the function based on async flag
                     if function_name in exec_globals:
-                        setattr(self, function_name, exec_globals[function_name])
+                        if is_async:
+                            self.register_async_function(function_name, exec_globals[function_name])
+                        else:
+                            setattr(self, function_name, exec_globals[function_name])
+                        result_detail = f"compiled function code ({'async' if is_async else 'sync'})"
                     else:
                         return {"error": f"Function {function_name} not found in provided code"}, False
                         
                 except Exception as e:
                     return {"error": f"Failed to compile function code: {str(e)}"}, False
+            
+            # Approach 3: Function name only (assumes function already exists)
+            else:
+                # Check if function already exists
+                if is_async:
+                    if function_name not in self.async_functions:
+                        return {"error": f"Async function {function_name} not found in async registry. Provide 'import_path'+'import_object' or 'function_code'"}, False
+                else:
+                    if not hasattr(self, function_name):
+                        return {"error": f"Function {function_name} not found. Provide either 'import_path'+'import_object' or 'function_code'"}, False
+                
+                result_detail = f"using existing function ({'async' if is_async else 'sync'})"
+        else:
+            result_detail = "static node"
         
         # Add the node
         self.nodes[coordinate] = node_data.copy()
@@ -216,7 +270,8 @@ class MetaOperationsMixin:
             "added": True,
             "coordinate": coordinate,
             "node_type": node_data["type"],
-            "prompt": node_data["prompt"]
+            "prompt": node_data["prompt"],
+            "implementation": result_detail
         }
         return result, True
     
