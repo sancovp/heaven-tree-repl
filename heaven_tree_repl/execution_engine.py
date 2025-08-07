@@ -31,8 +31,14 @@ class ExecutionEngineMixin:
                 # Function takes no arguments
                 return function()
             elif len(param_names) == 1 and not any(p.kind == p.VAR_KEYWORD for p in params.values()):
-                # Function takes exactly one argument - pass dict as single argument
-                return function(args)
+                # Function takes exactly one argument
+                param_name = param_names[0]
+                if isinstance(args, dict) and param_name in args and len(args) == 1:
+                    # Dict has exactly the parameter name as key - unpack it
+                    return function(args[param_name])
+                else:
+                    # Otherwise pass dict as single argument
+                    return function(args)
             else:
                 # Function takes multiple arguments or **kwargs - unpack dict
                 if isinstance(args, dict):
@@ -65,8 +71,14 @@ class ExecutionEngineMixin:
                 # Function takes no arguments
                 return await function()
             elif len(param_names) == 1 and not any(p.kind == p.VAR_KEYWORD for p in params.values()):
-                # Function takes exactly one argument - pass dict as single argument
-                return await function(args)
+                # Function takes exactly one argument
+                param_name = param_names[0]
+                if isinstance(args, dict) and param_name in args and len(args) == 1:
+                    # Dict has exactly the parameter name as key - unpack it
+                    return await function(args[param_name])
+                else:
+                    # Otherwise pass dict as single argument
+                    return await function(args)
             else:
                 # Function takes multiple arguments or **kwargs - unpack dict
                 if isinstance(args, dict):
