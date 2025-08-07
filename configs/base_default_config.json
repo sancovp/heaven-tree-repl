@@ -499,6 +499,7 @@
     },
     "0.2": {
       "type": "Menu",
+      "domain": "documentation",
       "prompt": "📚 Documentation",
       "description": "TreeShell documentation and command reference. To read a section, use the number + {} (e.g., '2 {}' to read Execution Syntax). Each section contains detailed guides and examples.",
       "signature": "docs() -> documentation_options",

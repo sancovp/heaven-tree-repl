@@ -7,6 +7,7 @@
   "nodes": {
     "0.3": {
       "type": "Menu",
+      "domain": "agent_management",
       "prompt": "\ud83c\udfae Agent Management Hub",
       "description": "Human interface for managing AI agents and workflows",
       "signature": "hub() -> management_options",
@@ -31,6 +32,7 @@
     },
     "0.3.1.1": {
       "type": "Menu",
+      "domain": "equipment",
       "prompt": "\ud83d\udd27 Equipment System",
       "description": "Equip/unequip agent components",
       "signature": "equipment() -> equipment_options",
@@ -358,6 +360,7 @@
     },
     "0.3.1.2": {
       "type": "Menu",
+      "domain": "config",
       "prompt": "\ud83d\udcbe Config Management",
       "description": "Save and load agent configurations",
       "signature": "config_management() -> config_options",
@@ -533,6 +536,7 @@
     },
     "0.4": {
       "type": "Menu",
+      "domain": "conversation",
       "prompt": "\ud83d\udcac Conversation Management",
       "description": "Default conversation system for all TreeShell applications",
       "signature": "conversations() -> conversation_options",

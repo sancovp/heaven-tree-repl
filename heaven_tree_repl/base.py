@@ -288,6 +288,27 @@ class TreeShellBase:
         """Get the current node definition."""
         return self.nodes.get(self.current_position, {})
     
+    def _get_domain_chain(self) -> str:
+        """Build domain chain by walking up the position hierarchy."""
+        domains = [self.app_id]  # Start with app_id
+        
+        # Split current position into parts (e.g., "0.3.1.2" -> ["0", "3", "1", "2"])
+        if self.current_position:
+            parts = self.current_position.split('.')
+            
+            # Walk up the hierarchy, checking each level for domain
+            for i in range(len(parts)):
+                # Build position string for current level (e.g., "0", "0.3", "0.3.1", etc.)
+                level_position = '.'.join(parts[:i+1])
+                node = self.nodes.get(level_position, {})
+                
+                # If this node has a domain, add it to the chain
+                if 'domain' in node:
+                    domains.append(node['domain'])
+        
+        # Join with dots, avoiding duplicates
+        return '.'.join(dict.fromkeys(domains))  # dict.fromkeys preserves order and removes dupes
+    
     def _build_response(self, payload: dict) -> dict:
         """Build standard response with current state."""
         base = {
@@ -297,7 +318,7 @@ class TreeShellBase:
             "session_vars_keys": list(self.session_vars.keys()),
             "recording_pathway": self.recording_pathway,
             "app_id": self.app_id,
-            "domain": self.domain,
+            "domain": self._get_domain_chain(),
             "role": self.role,
             "shortcuts": self.session_vars.get("_shortcuts", {})  # Include shortcuts for game state
         }
