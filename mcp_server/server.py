@@ -16,8 +16,7 @@ import sys
 sys.path.insert(0, '/home/GOD/heaven-framework-repo')
 sys.path.insert(0, '/home/GOD/heaven-tree-repl')
 
-from heaven_tree_repl import TreeShell, render_response
-from default_chat_app import main as get_conversation_shell
+from heaven_tree_repl import UserTreeShell, render_response
 
 
 class TreeShellTools(str, Enum):
@@ -47,8 +46,9 @@ class TreeShellMCPServer:
                 os.environ['HEAVEN_DATA_DIR'] = '/tmp/heaven_data'
                 os.makedirs('/tmp/heaven_data', exist_ok=True)
             
-            # Get the conversation shell (TreeShell instance) - now async
-            self.shell = await get_conversation_shell()
+            # Create and initialize UserTreeShell using its own main method
+            shell_instance = UserTreeShell({})
+            self.shell = await shell_instance.main()
             
         except Exception as e:
             print(f"Warning: Could not initialize conversation shell: {e}")

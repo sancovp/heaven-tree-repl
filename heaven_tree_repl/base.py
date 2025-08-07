@@ -577,3 +577,32 @@ class TreeShellBase:
             "node_type": node.get("type"),
             "position": node_coord
         }
+    
+    async def run(self):
+        """
+        Run the TreeShell - initialize and return self for command handling.
+        
+        This method should be called to properly start a TreeShell instance.
+        It performs any necessary initialization and returns the shell ready
+        for command handling via handle_command().
+        
+        Returns:
+            self: The initialized TreeShell instance
+        """
+        # Perform any additional initialization if needed
+        # (Currently TreeShell initializes in __init__, but this provides
+        # a consistent interface for future async initialization needs)
+        
+        return self
+    
+    async def main(self):
+        """
+        Main entry point for TreeShell execution.
+        
+        This provides the same interface that was previously in default_chat_app.py
+        but as a method on the TreeShell instance itself.
+        
+        Returns:
+            self: The initialized TreeShell instance ready for command handling
+        """
+        return await self.run()
