@@ -17,7 +17,7 @@ sys.path.insert(0, '/home/GOD/heaven-framework-repo')
 sys.path.insert(0, '/home/GOD/heaven-tree-repl')
 
 from heaven_tree_repl import TreeShell, render_response
-from conversation_chat_app import main as get_conversation_shell
+from default_chat_app import main as get_conversation_shell
 
 
 class TreeShellTools(str, Enum):

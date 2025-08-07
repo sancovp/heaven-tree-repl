@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="heaven-tree-repl",
-    version="0.1.15",
+    version="0.1.16",
     author="HEAVEN Development Team",
     author_email="heaven@example.com",
     description="Hierarchical Embodied Autonomously Validating Evolution Network Tree REPL",
@@ -16,6 +16,13 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/yourusername/heaven-tree-repl",
     packages=find_packages(),
+    package_data={
+        "heaven-tree-repl": [
+            "configs/*.json",
+            "shortcuts/*.json",
+        ],
+    },
+    include_package_data=True,
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

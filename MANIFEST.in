@@ -1,7 +1,8 @@
 include README.md
 include LICENSE
-recursive-include docs *
-recursive-include examples *
-recursive-exclude tests *
+recursive-include configs *.json
+recursive-include shortcuts *.json
+recursive-include heaven_tree_repl *.py
 global-exclude *.pyc
+global-exclude .DS_Store
 global-exclude __pycache__
