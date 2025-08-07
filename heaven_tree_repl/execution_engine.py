@@ -5,11 +5,80 @@ Execution Engine module - Core action execution and command processing.
 import json
 import datetime
 import asyncio
+import re
 from typing import Dict, List, Any, Optional, Tuple
 
 
 class ExecutionEngineMixin:
     """Mixin class providing execution engine functionality."""
+    
+    def _call_function_intelligently(self, function, args):
+        """Call function using signature inspection to determine calling convention."""
+        import inspect
+        
+        # Handle explicit no-args case first
+        if args == "()":
+            return function()
+        
+        try:
+            sig = inspect.signature(function)
+            params = sig.parameters
+            
+            # Filter out 'self' parameter for methods
+            param_names = [name for name in params.keys() if name != 'self']
+            
+            if not param_names:
+                # Function takes no arguments
+                return function()
+            elif len(param_names) == 1 and not any(p.kind == p.VAR_KEYWORD for p in params.values()):
+                # Function takes exactly one argument - pass dict as single argument
+                return function(args)
+            else:
+                # Function takes multiple arguments or **kwargs - unpack dict
+                if isinstance(args, dict):
+                    return function(**args)
+                else:
+                    return function(args)
+        except Exception:
+            # Fallback to legacy behavior if signature inspection fails
+            if isinstance(args, dict) and args:
+                return function(**args)
+            else:
+                return function(args)
+    
+    async def _call_function_intelligently_async(self, function, args):
+        """Call async function using signature inspection to determine calling convention."""
+        import inspect
+        
+        # Handle explicit no-args case first  
+        if args == "()":
+            return await function()
+        
+        try:
+            sig = inspect.signature(function)
+            params = sig.parameters
+            
+            # Filter out 'self' parameter for methods
+            param_names = [name for name in params.keys() if name != 'self']
+            
+            if not param_names:
+                # Function takes no arguments
+                return await function()
+            elif len(param_names) == 1 and not any(p.kind == p.VAR_KEYWORD for p in params.values()):
+                # Function takes exactly one argument - pass dict as single argument
+                return await function(args)
+            else:
+                # Function takes multiple arguments or **kwargs - unpack dict
+                if isinstance(args, dict):
+                    return await function(**args)
+                else:
+                    return await function(args)
+        except Exception:
+            # Fallback to legacy behavior if signature inspection fails
+            if isinstance(args, dict) and args:
+                return await function(**args)
+            else:
+                return await function(args)
     
     async def _execute_action(self, node_coord: str, args: dict = None) -> Tuple[dict, bool]:
         """Execute action at given coordinate."""
@@ -20,8 +89,17 @@ class ExecutionEngineMixin:
         if not node:
             return {"error": f"Node {node_coord} not found"}, False
             
-        # Substitute variables in arguments
-        final_args = self._substitute_variables(args)
+        # Merge args_schema template with user args, then substitute variables
+        args_schema = node.get("args_schema", {})
+        merged_args = args.copy()
+        
+        # Add any schema args that aren't provided by user
+        for key, value in args_schema.items():
+            if key not in merged_args:
+                merged_args[key] = value
+        
+        # Substitute variables in merged arguments
+        final_args = self._substitute_variables(merged_args)
         
         # Store execution in history
         execution_record = {
@@ -37,11 +115,33 @@ class ExecutionEngineMixin:
         success = True
         
         try:
-            # Check if this is an async function and handle accordingly
+            # Check if function needs to be imported on-demand
             async_function = self._get_async_function(function_name)
+            sync_function = self._get_sync_function(function_name) if hasattr(self, '_get_sync_function') else None
+            
+            # If function not found in registries, try to import it
+            if not async_function and not sync_function:
+                if "import_path" in node and "import_object" in node:
+                    result_detail, import_success = self._process_callable_node(node, node_coord)
+                    if not import_success:
+                        return {"error": f"Failed to import function: {result_detail}"}, False
+                    
+                    # Re-check registries after import
+                    async_function = self._get_async_function(function_name)
+                    sync_function = self._get_sync_function(function_name) if hasattr(self, '_get_sync_function') else None
+            
+            # Check if this is an async function and handle accordingly
             if async_function:
-                result = await async_function(final_args)
-                # Async functions should return (result, success) tuple - handled below in tuple check
+                # Handle explicit no-args case for chains, otherwise use intelligent calling
+                if final_args == "()":
+                    result = await async_function()
+                else:
+                    # Use intelligent calling based on actual function signature
+                    result = await self._call_function_intelligently_async(async_function, final_args)
+            # Check if this is a sync function in the registry  
+            elif sync_function:
+                # Use intelligent calling for sync functions
+                result = self._call_function_intelligently(sync_function, final_args)
             elif function_name == "_test_add":
                 result, success = self._test_add(final_args)
             elif function_name == "_test_multiply":
@@ -67,6 +167,8 @@ class ExecutionEngineMixin:
                 result, success = self._meta_export_session(final_args)
             elif function_name == "_meta_session_stats":
                 result, success = self._meta_session_stats(final_args)
+            elif function_name == "_meta_list_shortcuts":
+                result, success = self._meta_list_shortcuts(final_args)
             # Tree Structure CRUD Operations
             elif function_name == "_meta_add_node":
                 result, success = self._meta_add_node(final_args)
@@ -96,6 +198,8 @@ class ExecutionEngineMixin:
                 result, success = await self._omni_get_tool_info(final_args)
             elif function_name == "_omni_execute_tool":
                 result, success = await self._omni_execute_tool(final_args)
+            elif function_name == "_generate_treeshell_tool":
+                result, success = self._generate_treeshell_tool(final_args)
             else:
                 # Check if function exists as instance attribute
                 if function_name and hasattr(self, function_name):
@@ -234,7 +338,69 @@ class ExecutionEngineMixin:
             return self._handle_back()
         elif cmd == "menu":
             return self._handle_menu()
+        elif cmd == "nav":
+            return self._handle_nav()
+        elif cmd == "shortcut":
+            return self._handle_shortcut(args_str)
+        elif cmd == "shortcuts":
+            return self._handle_list_shortcuts()
         elif cmd == "exit":
             return self._handle_exit()
+        elif cmd == "set":
+            return self._handle_set(args_str)
         else:
+            # Check if this is a shortcut command
+            shortcuts = self.session_vars.get("_shortcuts", {})
+            if cmd in shortcuts:
+                shortcut = shortcuts[cmd]
+                
+                if isinstance(shortcut, str):
+                    # Legacy format - simple coordinate
+                    return await self._handle_jump(shortcut + (" " + args_str if args_str else ""))
+                elif isinstance(shortcut, dict):
+                    shortcut_type = shortcut.get("type", "jump")
+                    
+                    if shortcut_type == "jump":
+                        # Simple jump shortcut
+                        coordinate = shortcut["coordinate"]
+                        return await self._handle_jump(coordinate + (" " + args_str if args_str else ""))
+                    
+                    elif shortcut_type == "chain":
+                        # Chain template shortcut
+                        template = shortcut["template"]
+                        analysis = shortcut.get("analysis", {})
+                        
+                        # If template needs args but none provided, show error
+                        if analysis.get("entry_args") and not args_str:
+                            required_args = ", ".join(analysis["entry_args"])
+                            return {"error": f"Chain shortcut '{cmd}' requires arguments: {required_args}"}
+                        
+                        # Execute chain with template substitution
+                        if args_str:
+                            # Parse args and substitute into template
+                            try:
+                                args_dict = json.loads(args_str)
+                                # Substitute variables in template
+                                substituted_template = self._substitute_template_vars(template, args_dict)
+                                return await self._handle_chain(substituted_template)
+                            except json.JSONDecodeError:
+                                return {"error": "Invalid JSON arguments for chain shortcut"}
+                        else:
+                            # Execute unconstrained template
+                            return await self._handle_chain(template)
+                            
             return {"error": f"Unknown command: {cmd}"}
+    
+    def _substitute_template_vars(self, template: str, args_dict: dict) -> str:
+        """Substitute variables in chain template with provided arguments."""
+        substituted = template
+        for var_name, value in args_dict.items():
+            # Replace $var_name with the actual value
+            pattern = f"\\${var_name}\\b"
+            # The template already has quotes around the variable, just replace with the raw value
+            if isinstance(value, str):
+                replacement = value  # Don't add extra quotes - template already has them
+            else:
+                replacement = str(value)
+            substituted = re.sub(pattern, replacement, substituted)
+        return substituted

@@ -1,0 +1,102 @@
+// TreeShell Grammar Definition
+// A language for commanding reality through semantic coordinates
+
+start: command
+
+// Top-level commands
+command: simple_command
+       | chain_command
+       | shortcut_definition
+       | universal_command
+
+// Simple direct commands
+simple_command: "jump" target args?            -> jump_command
+              | "back"                         -> back_command
+              | "menu"                         -> menu_command
+              | "exit"                         -> exit_command
+              | "nav"                          -> nav_command
+              | "lang"                         -> lang_command
+              | SHORTCUT args?                 -> shortcut_exec
+              | NUMBER args?                   -> number_selection
+
+// Chain commands with control flow
+chain_command: "chain" chain_expr              -> chain
+
+// Chain expressions with operators
+chain_expr: chain_step                         -> single_step
+          | chain_expr "->" chain_step         -> sequential
+          | chain_expr "and" chain_step        -> parallel
+          | chain_expr "or" chain_step         -> alternative
+          | if_expr
+          | while_expr
+          | for_expr
+          | map_expr
+          | give_expr
+          | "(" chain_expr ")"                 -> grouped
+
+// Conditional expressions
+if_expr: "if" chain_step "then" chain_expr ("else" chain_expr)?  -> if_then_else
+       | "if" in_condition "then" chain_expr ("else" chain_expr)?  -> if_in_then_else
+
+// Membership test condition
+in_condition: VARIABLE "in" VARIABLE            -> in_condition
+
+// Loop expressions
+while_expr: "while" chain_step "x" chain_expr  -> while_loop
+
+// For loop expressions
+for_expr: "for" VARIABLE "in" VARIABLE "x" chain_expr  -> for_loop
+
+// Map expressions
+map_expr: "map" target "to" VARIABLE "->" VARIABLE  -> map_operation
+
+// Give expressions  
+give_expr: "give" ("(" "as" SHORTCUT ")")? VARIABLE "to" give_target  -> give_operation
+
+// Give target (can be variable, coordinate, or shortcut)
+give_target: VARIABLE                          -> variable
+           | COORDINATE                        -> coordinate
+           | SHORTCUT                          -> shortcut
+
+// Chain step (executable unit)
+chain_step: target args?                       -> step
+
+// Targets (coordinate or shortcut)
+target: COORDINATE                             -> coordinate
+      | SHORTCUT                               -> shortcut
+
+// Arguments
+args: JSON_OBJECT                              -> json_args
+    | "()"                                     -> no_args
+    | VARIABLE_ARGS                           -> template_args
+
+// Shortcut definitions
+shortcut_definition: "shortcut" SHORTCUT target                    -> jump_shortcut
+                   | "shortcut" SHORTCUT QUOTED_STRING             -> chain_shortcut
+
+// Universal commands (pathways, history, etc)
+universal_command: "build_pathway"                                  -> build_pathway
+                 | "save_emergent_pathway" SHORTCUT                -> save_pathway
+                 | "follow_established_pathway" SHORTCUT args?     -> follow_pathway
+                 | "show_execution_history"                        -> show_history
+                 | "analyze_patterns"                              -> analyze_patterns
+                 | "shortcuts"                                     -> list_shortcuts
+
+// Template variables in arguments
+VARIABLE_ARGS: /\{[^}]*\$[^}]+\}/
+
+// Terminals
+COORDINATE: /\d+(\.\d+)*/
+SHORTCUT: /[a-z][a-z0-9_]*/i
+NUMBER: /\d+/
+VARIABLE: /\$[a-z][a-z0-9_]*/i
+JSON_OBJECT: /{[^}]*}/
+QUOTED_STRING: /"([^"\\]|\\.)*"/
+
+// Skip whitespace
+%import common.WS
+%ignore WS
+
+// Comments (future feature)
+COMMENT: "//" /[^\n]*/
+%ignore COMMENT

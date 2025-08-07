@@ -1,0 +1,610 @@
+{
+  "app_id": "user_interface_hub",
+  "domain": "user_management",
+  "role": "AI Automation Emergence Engineer",
+  "about_app": "Default user interface with agent management and conversation capabilities",
+  "about_domain": "Human interface for managing AI agents, workflows, and conversations",
+  "nodes": {
+    "0.3": {
+      "type": "Menu",
+      "prompt": "\ud83c\udfae Agent Management Hub",
+      "description": "Human interface for managing AI agents and workflows",
+      "signature": "hub() -> management_options",
+      "options": {
+        "1": "0.3.1",
+        "2": "0.3.2",
+        "3": "0.3.3",
+        "4": "0.3.4",
+        "5": "0.3.5"
+      }
+    },
+    "0.3.1": {
+      "type": "Menu",
+      "prompt": "\ud83e\udd16 Agent Management",
+      "description": "Configure and manage AI agents",
+      "signature": "agent_management() -> agent_options",
+      "options": {
+        "1": "0.3.1.1",
+        "2": "0.3.1.2",
+        "3": "0.3.1.3"
+      }
+    },
+    "0.3.1.1": {
+      "type": "Menu",
+      "prompt": "\ud83d\udd27 Equipment System",
+      "description": "Equip/unequip agent components",
+      "signature": "equipment() -> equipment_options",
+      "options": {
+        "1": "0.3.1.1.1",
+        "2": "0.3.1.1.2",
+        "3": "0.3.1.1.3",
+        "4": "0.3.1.1.4",
+        "5": "0.3.1.1.5",
+        "6": "0.3.1.1.6",
+        "7": "0.3.1.1.7"
+      }
+    },
+    "0.3.1.1.1": {
+      "type": "Menu",
+      "prompt": "\ud83d\udcdd System Prompts",
+      "description": "Manage system prompts",
+      "signature": "system_prompts() -> prompt_options",
+      "options": {
+        "1": "0.3.1.1.1.1",
+        "2": "0.3.1.1.1.2",
+        "3": "0.3.1.1.1.3"
+      }
+    },
+    "0.3.1.1.1.1": {
+      "type": "Callable",
+      "prompt": "Equip System Prompt",
+      "description": "Add or replace system prompt",
+      "signature": "equip_system_prompt(prompt: str) -> result",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_system_prompt",
+      "function_name": "equip_system_prompt",
+      "is_async": false,
+      "args_schema": {}
+    },
+    "0.3.1.1.1.2": {
+      "type": "Callable",
+      "prompt": "Unequip System Prompt",
+      "description": "Remove current system prompt",
+      "signature": "unequip_system_prompt() -> result",
+      "function_name": "unequip_system_prompt",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_system_prompt",
+      "is_async": false
+    },
+    "0.3.1.1.1.3": {
+      "type": "Callable",
+      "prompt": "List System Prompts",
+      "description": "Show current system prompt",
+      "signature": "list_system_prompts() -> prompt_info",
+      "function_name": "list_system_prompts",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_system_prompts",
+      "is_async": false
+    },
+    "0.3.1.1.2": {
+      "type": "Menu",
+      "prompt": "\ud83d\udee0\ufe0f Tools",
+      "description": "Manage agent tools",
+      "signature": "tools() -> tool_options",
+      "options": {
+        "1": "0.3.1.1.2.1",
+        "2": "0.3.1.1.2.2",
+        "3": "0.3.1.1.2.3"
+      }
+    },
+    "0.3.1.1.2.1": {
+      "type": "Callable",
+      "prompt": "Equip Tool",
+      "description": "Add a tool to the agent",
+      "signature": "equip_tool(tool_name: str) -> result",
+      "function_name": "equip_tool",
+      "args_schema": {
+        "tool_name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_tool",
+      "is_async": false
+    },
+    "0.3.1.1.2.2": {
+      "type": "Callable",
+      "prompt": "Unequip Tool",
+      "description": "Remove a tool from the agent",
+      "signature": "unequip_tool(tool_name: str) -> result",
+      "function_name": "unequip_tool",
+      "args_schema": {
+        "tool_name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_tool",
+      "is_async": false
+    },
+    "0.3.1.1.2.3": {
+      "type": "Callable",
+      "prompt": "List Tools",
+      "description": "Show available and equipped tools",
+      "signature": "list_tools() -> tool_info",
+      "function_name": "list_tools",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_tools",
+      "is_async": false
+    },
+    "0.3.1.1.3": {
+      "type": "Menu",
+      "prompt": "\ud83e\udd16 Provider",
+      "description": "Manage AI provider",
+      "signature": "provider() -> provider_options",
+      "options": {
+        "1": "0.3.1.1.3.1",
+        "2": "0.3.1.1.3.2",
+        "3": "0.3.1.1.3.3"
+      }
+    },
+    "0.3.1.1.3.1": {
+      "type": "Callable",
+      "prompt": "Equip Provider",
+      "description": "Set AI provider (anthropic, openai, google)",
+      "signature": "equip_provider(provider: str) -> result",
+      "function_name": "equip_provider",
+      "args_schema": {
+        "provider": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_provider",
+      "is_async": false
+    },
+    "0.3.1.1.3.2": {
+      "type": "Callable",
+      "prompt": "Unequip Provider",
+      "description": "Remove current provider",
+      "signature": "unequip_provider() -> result",
+      "function_name": "unequip_provider",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_provider",
+      "is_async": false
+    },
+    "0.3.1.1.3.3": {
+      "type": "Callable",
+      "prompt": "List Providers",
+      "description": "Show available providers",
+      "signature": "list_providers() -> provider_info",
+      "function_name": "list_providers",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_providers",
+      "is_async": false
+    },
+    "0.3.1.1.4": {
+      "type": "Menu",
+      "prompt": "\ud83e\udde0 Model",
+      "description": "Manage AI model",
+      "signature": "model() -> model_options",
+      "options": {
+        "1": "0.3.1.1.4.1",
+        "2": "0.3.1.1.4.2",
+        "3": "0.3.1.1.4.3"
+      }
+    },
+    "0.3.1.1.4.1": {
+      "type": "Callable",
+      "prompt": "Equip Model",
+      "description": "Set AI model",
+      "signature": "equip_model(model: str) -> result",
+      "function_name": "equip_model",
+      "args_schema": {
+        "model": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_model",
+      "is_async": false
+    },
+    "0.3.1.1.4.2": {
+      "type": "Callable",
+      "prompt": "Unequip Model",
+      "description": "Remove current model",
+      "signature": "unequip_model() -> result",
+      "function_name": "unequip_model",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_model",
+      "is_async": false
+    },
+    "0.3.1.1.4.3": {
+      "type": "Callable",
+      "prompt": "List Models",
+      "description": "Show available models for current provider",
+      "signature": "list_models() -> model_info",
+      "function_name": "list_models",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_models",
+      "is_async": false
+    },
+    "0.3.1.1.5": {
+      "type": "Menu",
+      "prompt": "\ud83c\udf21\ufe0f Temperature",
+      "description": "Manage temperature setting",
+      "signature": "temperature() -> temperature_options",
+      "options": {
+        "1": "0.3.1.1.5.1",
+        "2": "0.3.1.1.5.2",
+        "3": "0.3.1.1.5.3"
+      }
+    },
+    "0.3.1.1.5.1": {
+      "type": "Callable",
+      "prompt": "Equip Temperature",
+      "description": "Set temperature (0.0-1.0)",
+      "signature": "equip_temperature(temperature: float) -> result",
+      "function_name": "equip_temperature",
+      "args_schema": {
+        "temperature": "float"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_temperature",
+      "is_async": false
+    },
+    "0.3.1.1.5.2": {
+      "type": "Callable",
+      "prompt": "Unequip Temperature",
+      "description": "Remove temperature setting",
+      "signature": "unequip_temperature() -> result",
+      "function_name": "unequip_temperature",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_temperature",
+      "is_async": false
+    },
+    "0.3.1.1.5.3": {
+      "type": "Callable",
+      "prompt": "List Temperature",
+      "description": "Show current temperature setting",
+      "signature": "list_temperature() -> temperature_info",
+      "function_name": "list_temperature",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_temperature",
+      "is_async": false
+    },
+    "0.3.1.1.6": {
+      "type": "Menu",
+      "prompt": "\ud83d\udccf Max Tokens",
+      "description": "Manage max tokens setting",
+      "signature": "max_tokens() -> token_options",
+      "options": {
+        "1": "0.3.1.1.6.1",
+        "2": "0.3.1.1.6.2",
+        "3": "0.3.1.1.6.3"
+      }
+    },
+    "0.3.1.1.6.1": {
+      "type": "Callable",
+      "prompt": "Equip Max Tokens",
+      "description": "Set maximum tokens",
+      "signature": "equip_max_tokens(max_tokens: int) -> result",
+      "function_name": "equip_max_tokens",
+      "args_schema": {
+        "max_tokens": "int"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_max_tokens",
+      "is_async": false
+    },
+    "0.3.1.1.6.2": {
+      "type": "Callable",
+      "prompt": "Unequip Max Tokens",
+      "description": "Remove max tokens setting",
+      "signature": "unequip_max_tokens() -> result",
+      "function_name": "unequip_max_tokens",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_max_tokens",
+      "is_async": false
+    },
+    "0.3.1.1.6.3": {
+      "type": "Callable",
+      "prompt": "List Max Tokens",
+      "description": "Show current max tokens setting",
+      "signature": "list_max_tokens() -> token_info",
+      "function_name": "list_max_tokens",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_max_tokens",
+      "is_async": false
+    },
+    "0.3.1.1.7": {
+      "type": "Menu",
+      "prompt": "\ud83d\udce6 Prompt Blocks",
+      "description": "Manage prompt suffix blocks",
+      "signature": "prompt_blocks() -> block_options",
+      "options": {
+        "1": "0.3.1.1.7.1",
+        "2": "0.3.1.1.7.2",
+        "3": "0.3.1.1.7.3"
+      }
+    },
+    "0.3.1.1.7.1": {
+      "type": "Callable",
+      "prompt": "Equip Prompt Block",
+      "description": "Add a prompt suffix block",
+      "signature": "equip_prompt_block(block_name: str) -> result",
+      "function_name": "equip_prompt_block",
+      "args_schema": {
+        "block_name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_prompt_block",
+      "is_async": false
+    },
+    "0.3.1.1.7.2": {
+      "type": "Callable",
+      "prompt": "Unequip Prompt Block",
+      "description": "Remove a prompt suffix block",
+      "signature": "unequip_prompt_block(block_name: str) -> result",
+      "function_name": "unequip_prompt_block",
+      "args_schema": {
+        "block_name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "unequip_prompt_block",
+      "is_async": false
+    },
+    "0.3.1.1.7.3": {
+      "type": "Callable",
+      "prompt": "List Prompt Blocks",
+      "description": "Show available and equipped prompt blocks",
+      "signature": "list_prompt_blocks() -> block_info",
+      "function_name": "list_prompt_blocks",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_prompt_blocks",
+      "is_async": false
+    },
+    "0.3.1.2": {
+      "type": "Menu",
+      "prompt": "\ud83d\udcbe Config Management",
+      "description": "Save and load agent configurations",
+      "signature": "config_management() -> config_options",
+      "options": {
+        "1": "0.3.1.2.1",
+        "2": "0.3.1.2.2",
+        "3": "0.3.1.2.3",
+        "4": "0.3.1.2.4",
+        "5": "0.3.1.2.5"
+      }
+    },
+    "0.3.1.2.1": {
+      "type": "Callable",
+      "prompt": "Save Config As",
+      "description": "Save current config to file",
+      "signature": "save_config_as(name: str) -> result",
+      "function_name": "save_config_as",
+      "args_schema": {
+        "name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "save_config_as",
+      "is_async": false
+    },
+    "0.3.1.2.2": {
+      "type": "Callable",
+      "prompt": "Copy Existing",
+      "description": "Load existing config into dynamic config",
+      "signature": "copy_existing(name: str) -> result",
+      "function_name": "copy_existing",
+      "args_schema": {
+        "name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "copy_existing",
+      "is_async": false
+    },
+    "0.3.1.2.3": {
+      "type": "Callable",
+      "prompt": "List Saved Configs",
+      "description": "Show all saved configurations",
+      "signature": "list_saved_configs() -> config_list",
+      "function_name": "list_saved_configs",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "list_saved_configs",
+      "is_async": false
+    },
+    "0.3.1.2.4": {
+      "type": "Callable",
+      "prompt": "Preview Dynamic Config",
+      "description": "Show current dynamic configuration",
+      "signature": "preview_dynamic_config() -> config_preview",
+      "function_name": "preview_dynamic_config",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "preview_dynamic_config",
+      "is_async": false
+    },
+    "0.3.1.2.5": {
+      "type": "Callable",
+      "prompt": "Equip Name",
+      "description": "Set agent name",
+      "signature": "equip_name(name: str) -> result",
+      "function_name": "equip_name",
+      "args_schema": {
+        "name": "str"
+      },
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "equip_name",
+      "is_async": false
+    },
+    "0.3.1.3": {
+      "type": "Menu",
+      "prompt": "\ud83d\udd04 Reset & Utils",
+      "description": "Reset config and utility functions",
+      "signature": "utils() -> util_options",
+      "options": {
+        "1": "0.3.1.3.1",
+        "2": "0.3.1.3.2"
+      }
+    },
+    "0.3.1.3.1": {
+      "type": "Callable",
+      "prompt": "Reset Dynamic Config",
+      "description": "Clear current dynamic configuration",
+      "signature": "reset_dynamic_config() -> result",
+      "function_name": "reset_dynamic_config",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "reset_dynamic_config",
+      "is_async": false
+    },
+    "0.3.1.3.2": {
+      "type": "Callable",
+      "prompt": "Get Dynamic Config",
+      "description": "View raw dynamic configuration",
+      "signature": "get_dynamic_config() -> config_dict",
+      "function_name": "get_dynamic_config",
+      "import_path": "heaven_tree_repl.agent_config_management",
+      "import_object": "get_dynamic_config",
+      "is_async": false
+    },
+    "0.3.2": {
+      "type": "Menu",
+      "prompt": "\u2705 Workflow Approvals",
+      "description": "Review and approve agent-generated workflows",
+      "signature": "approvals() -> approval_options",
+      "options": {
+        "1": "0.3.2.1",
+        "2": "0.3.2.2",
+        "3": "0.3.2.3",
+        "4": "0.3.2.4"
+      }
+    },
+    "0.3.2.1": {
+      "type": "Callable",
+      "prompt": "View Pending Approvals",
+      "description": "Show all workflows awaiting human approval",
+      "signature": "view_pending() -> approval_list",
+      "function_name": "_view_pending_approvals"
+    },
+    "0.3.2.2": {
+      "type": "Callable",
+      "prompt": "Approve Workflow",
+      "description": "Approve a quarantined agent workflow",
+      "signature": "approve_workflow(approval_id: str) -> approval_result",
+      "function_name": "_approve_workflow_action",
+      "args_schema": {
+        "approval_id": "str"
+      }
+    },
+    "0.3.2.3": {
+      "type": "Callable",
+      "prompt": "Reject Workflow",
+      "description": "Reject a quarantined agent workflow",
+      "signature": "reject_workflow(approval_id: str) -> rejection_result",
+      "function_name": "_reject_workflow_action",
+      "args_schema": {
+        "approval_id": "str"
+      }
+    },
+    "0.3.2.4": {
+      "type": "Callable",
+      "prompt": "View Approved Workflows",
+      "description": "Show all approved workflows",
+      "signature": "view_approved() -> approved_list",
+      "function_name": "_view_approved_workflows"
+    },
+    "0.3.3": {
+      "type": "Menu",
+      "prompt": "\ud83d\udcca Sessions",
+      "description": "Manage active and historical sessions",
+      "signature": "sessions() -> session_options",
+      "options": {}
+    },
+    "0.3.4": {
+      "type": "Menu",
+      "prompt": "\u2699\ufe0f System",
+      "description": "System settings and monitoring",
+      "signature": "system() -> system_options",
+      "options": {}
+    },
+    "0.3.5": {
+      "type": "Menu",
+      "prompt": "\ud83d\udcac Conversations",
+      "description": "Chat and conversation management",
+      "signature": "conversations() -> conversation_options",
+      "options": {
+        "1": "0.3.5.1",
+        "2": "0.3.5.2",
+        "3": "0.3.5.3",
+        "4": "0.3.5.4",
+        "5": "0.3.5.5"
+      }
+    },
+    "0.4": {
+      "type": "Menu",
+      "prompt": "\ud83d\udcac Conversation Management",
+      "description": "Default conversation system for all TreeShell applications",
+      "signature": "conversations() -> conversation_options",
+      "options": {
+        "1": "0.4.1",
+        "2": "0.4.2",
+        "3": "0.4.3",
+        "4": "0.4.4",
+        "5": "0.4.5"
+      }
+    },
+    "0.4.1": {
+      "type": "Callable",
+      "prompt": "Start New Chat",
+      "description": "Start a new conversation with a title and first message",
+      "signature": "start_chat(title: str, message: str, tags: str) -> conversation_result",
+      "import_path": "heaven_tree_repl.conversation_chat_app",
+      "import_object": "_start_chat",
+      "function_name": "_start_chat",
+      "is_async": true,
+      "args_schema": {
+        "agent_config": "$selected_agent_config"
+      }
+    },
+    "0.4.2": {
+      "type": "Callable",
+      "prompt": "Continue Chat",
+      "description": "Continue the current active conversation",
+      "signature": "continue_chat(message: str) -> chat_response",
+      "import_path": "heaven_tree_repl.conversation_chat_app",
+      "import_object": "_continue_chat",
+      "function_name": "_continue_chat",
+      "is_async": true,
+      "args_schema": {
+        "agent_config": "$selected_agent_config"
+      }
+    },
+    "0.4.3": {
+      "type": "Callable",
+      "prompt": "List Conversations",
+      "description": "Show recent conversations",
+      "signature": "list_conversations(limit: int) -> conversation_list",
+      "import_path": "heaven_tree_repl.conversation_chat_app",
+      "import_object": "_list_conversations",
+      "function_name": "_list_conversations",
+      "args_schema": {
+        "limit": "int"
+      }
+    },
+    "0.4.4": {
+      "type": "Callable",
+      "prompt": "Load Conversation",
+      "description": "Switch to an existing conversation",
+      "signature": "load_conversation(conversation_id: str) -> load_result",
+      "import_path": "heaven_tree_repl.conversation_chat_app",
+      "import_object": "_load_conversation",
+      "function_name": "_load_conversation",
+      "args_schema": {
+        "conversation_id": "str"
+      }
+    },
+    "0.4.5": {
+      "type": "Callable",
+      "prompt": "Search Conversations",
+      "description": "Search conversations by title or tags",
+      "signature": "search_conversations(query: str) -> search_results",
+      "import_path": "heaven_tree_repl.conversation_chat_app",
+      "import_object": "_search_conversations",
+      "function_name": "_search_conversations",
+      "args_schema": {
+        "query": "str"
+      }
+    }
+  }
+}

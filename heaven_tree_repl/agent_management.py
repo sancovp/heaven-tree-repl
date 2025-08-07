@@ -154,132 +154,70 @@ class UserTreeReplMixin:
     
     def __init_user_features__(self, parent_approval_callback=None):
         """Initialize user-specific features."""
+        from heaven_base.baseheavenagent import HeavenAgentConfig
+        from heaven_base.unified_chat import ProviderEnum
+        
         self.active_agent_sessions = {}
         self.approval_queue = ApprovalQueue()
         self.parent_approval_callback = parent_approval_callback
+        self.dynamic_agent_config = HeavenAgentConfig(
+            name="DynamicAgent",
+            system_prompt="You are a helpful AI assistant.",
+            tools=[],
+            provider=ProviderEnum.OPENAI,
+            model="o4-mini",
+            temperature=0.7,
+            max_tokens=8000
+        )
+        
+        # Store dynamic_agent_config in session variables so equipment system can access it
+        self.session_vars["dynamic_agent_config"] = self.dynamic_agent_config
+        
+        # Store selected_agent_config as string identifier - initially points to dynamic config
+        self.session_vars["selected_agent_config"] = "dynamic"
+    
+    def _resolve_agent_config(self, config_identifier: str):
+        """Resolve config identifier to actual HeavenAgentConfig object."""
+        from heaven_base.unified_chat import ProviderEnum
+        from .agent_config_management import get_dynamic_config
+        
+        if config_identifier == "dynamic":
+            # UPDATE the existing dynamic config with equipped values
+            dynamic_data = get_dynamic_config()
+            
+            # Update the existing config object with equipped values
+            if 'name' in dynamic_data:
+                self.dynamic_agent_config.name = dynamic_data['name']
+            if 'system_prompt' in dynamic_data:
+                self.dynamic_agent_config.system_prompt = dynamic_data['system_prompt']
+            if 'tools' in dynamic_data:
+                self.dynamic_agent_config.tools = dynamic_data['tools']
+            if 'provider' in dynamic_data:
+                # Map provider string to enum
+                provider_map = {
+                    'anthropic': ProviderEnum.ANTHROPIC,
+                    'openai': ProviderEnum.OPENAI,
+                    'google': ProviderEnum.GOOGLE
+                }
+                self.dynamic_agent_config.provider = provider_map.get(dynamic_data['provider'], ProviderEnum.OPENAI)
+            if 'model' in dynamic_data:
+                self.dynamic_agent_config.model = dynamic_data['model']
+            if 'temperature' in dynamic_data:
+                self.dynamic_agent_config.temperature = dynamic_data['temperature']
+            if 'max_tokens' in dynamic_data:
+                self.dynamic_agent_config.max_tokens = dynamic_data['max_tokens']
+            if 'prompt_suffix_blocks' in dynamic_data:
+                self.dynamic_agent_config.prompt_suffix_blocks = dynamic_data['prompt_suffix_blocks']
+            
+            return self.dynamic_agent_config  # Return the updated existing object
+        else:
+            # TODO: Load saved config by name
+            # For now, fall back to the original dynamic agent config
+            return self.dynamic_agent_config
     
     def _get_user_interface_config(self):
-        """Configuration for the human user interface."""
-        return {
-            "app_id": "agent_management_hub",
-            "initial_node": "0",
-            "nodes": {
-                "0": {
-                    "type": "Menu",
-                    "prompt": "🎮 Agent Management Hub", 
-                    "description": "Human interface for managing AI agents and workflows",
-                    "signature": "hub() -> management_options",
-                    "options": {
-                        "1": "0.1",  # conversations
-                        "2": "0.2",  # agent_management
-                        "3": "0.3",  # workflow_approvals
-                        "4": "0.4",  # session_management
-                        "5": "0.5"   # system
-                    }
-                },
-                "0.1": {
-                    "type": "Menu",
-                    "prompt": "💬 Conversations",
-                    "description": "Chat and conversation management",
-                    "signature": "conversations() -> conversation_options",
-                    "options": {
-                        # Conversation subgraph will be added here
-                    }
-                },
-                "0.2": {
-                    "type": "Menu",
-                    "prompt": "🤖 Agent Management",
-                    "description": "Configure and manage AI agents",
-                    "signature": "agent_management() -> agent_options",
-                    "options": {
-                        "1": "0.2.1",  # agents
-                        "2": "0.2.2",  # tools  
-                        "3": "0.2.3"   # prompts
-                    }
-                },
-                "0.2.1": {
-                    "type": "Menu",
-                    "prompt": "Agents",
-                    "description": "Manage agent configurations",
-                    "signature": "agents() -> agent_configs",
-                    "options": {}
-                },
-                "0.2.2": {
-                    "type": "Menu",
-                    "prompt": "Tools", 
-                    "description": "Manage agent tools",
-                    "signature": "tools() -> tool_configs",
-                    "options": {}
-                },
-                "0.2.3": {
-                    "type": "Menu",
-                    "prompt": "Prompts",
-                    "description": "Manage agent prompts",
-                    "signature": "prompts() -> prompt_configs", 
-                    "options": {}
-                },
-                "0.3": {
-                    "type": "Menu", 
-                    "prompt": "✅ Workflow Approvals",
-                    "description": "Review and approve agent-generated workflows",
-                    "signature": "approvals() -> approval_options",
-                    "options": {
-                        "1": "0.3.1",  # view_pending_approvals
-                        "2": "0.3.2",  # approve_workflow_action
-                        "3": "0.3.3",  # reject_workflow_action
-                        "4": "0.3.4"   # view_approved_workflows
-                    }
-                },
-                "0.3.1": {
-                    "type": "Callable",
-                    "prompt": "View Pending Approvals",
-                    "description": "Show all workflows awaiting human approval",
-                    "signature": "view_pending() -> approval_list",
-                    "function_name": "_view_pending_approvals"
-                },
-                "0.3.2": {
-                    "type": "Callable",
-                    "prompt": "Approve Workflow",
-                    "description": "Approve a quarantined agent workflow",
-                    "signature": "approve_workflow(approval_id: str) -> approval_result",
-                    "function_name": "_approve_workflow_action",
-                    "args_schema": {
-                        "approval_id": "str"
-                    }
-                },
-                "0.3.3": {
-                    "type": "Callable",
-                    "prompt": "Reject Workflow",
-                    "description": "Reject a quarantined agent workflow",
-                    "signature": "reject_workflow(approval_id: str) -> rejection_result",
-                    "function_name": "_reject_workflow_action",
-                    "args_schema": {
-                        "approval_id": "str"
-                    }
-                },
-                "0.3.4": {
-                    "type": "Callable",
-                    "prompt": "View Approved Workflows",
-                    "description": "Show all approved workflows",
-                    "signature": "view_approved() -> approved_list",
-                    "function_name": "_view_approved_workflows"
-                },
-                "0.4": {
-                    "type": "Menu",
-                    "prompt": "📊 Sessions",
-                    "description": "Manage active and historical sessions",
-                    "signature": "sessions() -> session_options",
-                    "options": {}
-                },
-                "0.5": {
-                    "type": "Menu",
-                    "prompt": "⚙️ System",
-                    "description": "System settings and monitoring",
-                    "signature": "system() -> system_options",
-                    "options": {}
-                }
-            }
-        }
+        """Load user interface configuration from JSON file."""
+        return self._load_config_file("user_default_config.json")
     
     def _reject_workflow_action(self, args: dict) -> dict:
         """Reject a workflow by approval ID."""

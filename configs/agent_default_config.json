@@ -1,0 +1,16 @@
+{
+  "app_id": "agent_interface",
+  "domain": "agent_domain",
+  "role": "Autonomous AI Agent",
+  "about_app": "Default agent interface for domain-specific work",
+  "about_domain": "Agent workspace for domain-specific functionality",
+  "nodes": {
+    "0.1": {
+      "type": "Menu",
+      "prompt": "🎯 Agent Domain",
+      "description": "Agent workspace for domain-specific functionality and custom nodes",
+      "signature": "domain() -> domain_options",
+      "options": {}
+    }
+  }
+}

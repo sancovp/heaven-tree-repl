@@ -22,7 +22,15 @@ class TreeShellBase:
         self.app_id = graph_config.get("app_id", "default")
         self.domain = graph_config.get("domain", "general")
         self.role = graph_config.get("role", "assistant")
-        self.nodes = self._build_coordinate_nodes(graph_config.get("nodes", {}))
+        self.about_app = graph_config.get("about_app", "")
+        self.about_domain = graph_config.get("about_domain", "")
+        
+        # Initialize function registries before building nodes
+        self.async_functions = {}
+        self.sync_functions = {}
+        
+        # Build nodes (may need to import functions)
+        self.nodes = self._build_coordinate_nodes(graph_config)
         
         # Navigation state
         self.current_position = "0"
@@ -31,6 +39,9 @@ class TreeShellBase:
         # Live session state - persists objects during session
         self.session_vars = {}
         self.execution_history = []
+        
+        # Load shortcuts
+        self._load_shortcuts()
         
         # Pathway recording - enhanced system
         self.recording_pathway = False
@@ -54,392 +65,180 @@ class TreeShellBase:
             "crystallization_history": []  # Track RSI iterations
         }
         
+        # LinguisticStructure hierarchy tracking
+        self.linguistic_structures = {
+            "words": [],      # atomic units (coordinates, shortcuts, operands)
+            "sentences": [],  # combinations with operands
+            "paragraphs": [], # 2+ sentences
+            "pages": [],      # 5 paragraphs
+            "chapters": [],   # 2+ pages
+            "books": [],      # 2+ chapters
+            "volumes": []     # 2+ books
+        }
+        
+        # Automation system: Schedule = when + if + then, Automation = set of schedules  
+        self.schedules = {}  # Individual schedules: name -> {when, if, then, created, last_run}
+        self.automations = {}  # Collections of schedules: name -> {schedules: [], description}
+        self.master_schedule = {}  # All automations
+        self.scheduler_active = False
+        
         # Chain execution state
         self.chain_results = {}
         self.step_counter = 0
+    
+    def _load_shortcuts(self) -> None:
+        """Load shortcuts from JSON files. Override in subclasses for different layers."""
+        shortcuts = {}
         
-        # Async function registry
-        self.async_functions = {}
+        # Load base shortcuts (always loaded)
+        base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
+        if base_shortcuts:
+            shortcuts.update(base_shortcuts)
+        
+        # Store in session vars
+        self.session_vars["_shortcuts"] = shortcuts
+    
+    def _load_config_file(self, filename: str) -> dict:
+        """Load configuration from a JSON file."""
+        import os
+        import json
+        
+        # Get the directory where this module is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to heaven-tree-repl directory, then into configs
+        configs_dir = os.path.join(os.path.dirname(current_dir), "configs")
+        file_path = os.path.join(configs_dir, filename)
+        
+        try:
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    return json.load(f)
+            else:
+                print(f"Warning: Config file not found: {file_path}")
+                return {}
+        except Exception as e:
+            print(f"Error loading config from {filename}: {e}")
+            return {}
+    
+    def _load_shortcuts_file(self, filename: str) -> dict:
+        """Load shortcuts from a specific JSON file."""
+        import os
+        import json
+        
+        # Get the directory where this module is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to heaven-tree-repl directory, then into shortcuts
+        shortcuts_dir = os.path.join(os.path.dirname(current_dir), "shortcuts")
+        file_path = os.path.join(shortcuts_dir, filename)
+        
+        try:
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    return json.load(f)
+            else:
+                print(f"Warning: Shortcuts file not found: {file_path}")
+                return {}
+        except Exception as e:
+            print(f"Error loading shortcuts from {filename}: {e}")
+            return {}
+    
+    def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
+        """Save shortcut to appropriate JSON file based on TreeShell type. Override in subclasses."""
+        # Base TreeShell saves to base_shortcuts.json
+        self._save_shortcut_to_specific_file(alias, shortcut_data, "base_shortcuts.json")
+    
+    def _save_shortcut_to_specific_file(self, alias: str, shortcut_data: dict, filename: str) -> None:
+        """Save shortcut to a specific JSON file."""
+        import os
+        import json
+        
+        # Get the directory where this module is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # Go up one level to heaven-tree-repl directory, then into shortcuts
+        shortcuts_dir = os.path.join(os.path.dirname(current_dir), "shortcuts")
+        file_path = os.path.join(shortcuts_dir, filename)
+        
+        try:
+            # Load existing shortcuts
+            existing_shortcuts = {}
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    existing_shortcuts = json.load(f)
+            
+            # Add new shortcut
+            existing_shortcuts[alias] = shortcut_data
+            
+            # Save back to file
+            with open(file_path, 'w') as f:
+                json.dump(existing_shortcuts, f, indent=2)
+                
+        except Exception as e:
+            print(f"Error saving shortcut to {filename}: {e}")
     
     def register_async_function(self, function_name: str, async_func) -> None:
         """Register an async function for use in tree repl."""
         self.async_functions[function_name] = async_func
     
+    def register_sync_function(self, function_name: str, sync_func) -> None:
+        """Register a sync function for use in tree repl."""
+        self.sync_functions[function_name] = sync_func
+    
     def _get_async_function(self, function_name: str):
         """Get async function if registered."""
         return self.async_functions.get(function_name)
     
+    def _get_sync_function(self, function_name: str):
+        """Get sync function if registered."""
+        return self.sync_functions.get(function_name)
+    
     def _build_coordinate_nodes(self, node_config: dict) -> dict:
         """Convert node config to coordinate-based addressing."""
+        # Check if we already have fully formed nodes (new JSON-based system)
+        if "nodes" in node_config and isinstance(node_config["nodes"], dict):
+            nodes_dict = node_config["nodes"]
+            # Check if this looks like coordinate-based nodes
+            has_coordinate_nodes = any(
+                key == "0" or "." in key 
+                for key in nodes_dict.keys()
+            )
+            if has_coordinate_nodes:
+                return nodes_dict.copy()
+        
+        # Fallback to old system for backward compatibility
         nodes = {}
         
-        # Root node (0)
-        nodes["0"] = {
-            "type": "Menu",
-            "prompt": "Main Menu",
-            "description": f"Root menu for {self.app_id}",
-            "signature": "menu() -> navigation_options",
-            "options": {
-                "1": "0.0",  # settings
-                "2": "0.1",  # domain
-                "3": "0.2"   # docs
-            }
-        }
+        # Load base configuration from JSON
+        base_config = self._load_config_file("base_default_config.json")
+        if base_config and "nodes" in base_config:
+            # Start with base nodes
+            nodes.update(base_config["nodes"])
+            
+            # Update root node description with current app_id if different
+            if "0" in nodes:
+                nodes["0"]["description"] = f"Root menu for {self.app_id}"
         
-        # Settings node (0.0)
-        nodes["0.0"] = {
-            "type": "Menu", 
-            "prompt": "Settings & Management",
-            "description": "System configuration and pathway management",
-            "signature": "settings() -> management_options",
-            "options": {
-                "1": "0.0.1",  # manage_pathways
-                "2": "0.0.2",  # meta_operations
-                "3": "0.0.3",  # mcp_generator
-                "4": "0.0.4",  # omnitool
-                "5": "0.0.5"   # session_info
-            }
-        }
+        # Convert provided domain nodes to coordinate system starting at 0.1
+        # Only convert nodes that aren't already coordinate-based
+        if "nodes" in node_config and node_config["nodes"]:
+            domain_nodes = self._convert_to_coordinates(node_config["nodes"], "0.1")
+            nodes.update(domain_nodes)
         
-        # Add settings sub-nodes
-        nodes["0.0.1"] = {
-            "type": "Callable",
-            "prompt": "Manage Pathways",
-            "description": "View and manage saved pathways",
-            "signature": "manage_pathways() -> pathway_list",
-            "function_name": "_manage_pathways"
-        }
-        
-        # Meta Operations Menu (0.0.2)
-        nodes["0.0.2"] = {
-            "type": "Menu",
-            "prompt": "Meta Operations",
-            "description": "State management and session operations",
-            "signature": "meta_operations() -> operation_options",
-            "options": {
-                "1": "0.0.2.1",  # save_var
-                "2": "0.0.2.2",  # get_var
-                "3": "0.0.2.3",  # append_to_var
-                "4": "0.0.2.4",  # delete_var
-                "5": "0.0.2.5",  # list_vars
-                "6": "0.0.2.6",  # save_to_file
-                "7": "0.0.2.7",  # load_from_file
-                "8": "0.0.2.8",  # export_session
-                "9": "0.0.2.9",  # session_stats
-                "10": "0.0.2.10",  # add_node
-                "11": "0.0.2.11",  # update_node
-                "12": "0.0.2.12",  # delete_node
-                "13": "0.0.2.13",  # list_nodes
-                "14": "0.0.2.14",  # get_node
-            }
-        }
-        
-        # State Management Operations
-        nodes["0.0.2.1"] = {
-            "type": "Callable",
-            "prompt": "Save Variable",
-            "description": "Store value in session variables",
-            "signature": "save_var(name: str, value: any) -> bool",
-            "function_name": "_meta_save_var",
-            "args_schema": {"name": "str", "value": "any"}
-        }
-        
-        nodes["0.0.2.2"] = {
-            "type": "Callable", 
-            "prompt": "Get Variable",
-            "description": "Retrieve session variable value",
-            "signature": "get_var(name: str) -> any",
-            "function_name": "_meta_get_var",
-            "args_schema": {"name": "str"}
-        }
-        
-        nodes["0.0.2.3"] = {
-            "type": "Callable",
-            "prompt": "Append to Variable",
-            "description": "Append value to existing variable (list/string)",
-            "signature": "append_to_var(name: str, value: any) -> bool",
-            "function_name": "_meta_append_to_var", 
-            "args_schema": {"name": "str", "value": "any"}
-        }
-        
-        nodes["0.0.2.4"] = {
-            "type": "Callable",
-            "prompt": "Delete Variable",
-            "description": "Remove session variable",
-            "signature": "delete_var(name: str) -> bool",
-            "function_name": "_meta_delete_var",
-            "args_schema": {"name": "str"}
-        }
-        
-        nodes["0.0.2.5"] = {
-            "type": "Callable",
-            "prompt": "List Variables", 
-            "description": "Show all session variables with values",
-            "signature": "list_vars() -> dict",
-            "function_name": "_meta_list_vars"
-        }
-        
-        # Persistence Operations
-        nodes["0.0.2.6"] = {
-            "type": "Callable",
-            "prompt": "Save to File",
-            "description": "Write variable value to file",
-            "signature": "save_to_file(filename: str, var_name: str) -> bool",
-            "function_name": "_meta_save_to_file",
-            "args_schema": {"filename": "str", "var_name": "str"}
-        }
-        
-        nodes["0.0.2.7"] = {
-            "type": "Callable",
-            "prompt": "Load from File", 
-            "description": "Load file content into variable",
-            "signature": "load_from_file(filename: str, var_name: str) -> bool",
-            "function_name": "_meta_load_from_file",
-            "args_schema": {"filename": "str", "var_name": "str"}
-        }
-        
-        nodes["0.0.2.8"] = {
-            "type": "Callable",
-            "prompt": "Export Session",
-            "description": "Save complete session state to file",
-            "signature": "export_session(filename: str) -> bool", 
-            "function_name": "_meta_export_session",
-            "args_schema": {"filename": "str"}
-        }
-        
-        # Introspection Operations
-        nodes["0.0.2.9"] = {
-            "type": "Callable",
-            "prompt": "Session Stats",
-            "description": "Show session statistics and memory usage",
-            "signature": "session_stats() -> dict",
-            "function_name": "_meta_session_stats"
-        }
-        
-        # Tree Structure CRUD Operations
-        nodes["0.0.2.10"] = {
-            "type": "Callable",
-            "prompt": "Add Node",
-            "description": "Create new tree nodes. 3 ways for Callable nodes: 1) Import existing: {'import_path': 'module.path', 'import_object': 'function_name'} 2) Dynamic code: {'function_code': 'def _my_func(args): return \"result\", True'} 3) Use existing function: just {'function_name': '_existing_func'}. All Callable nodes need 'type', 'prompt', 'function_name', 'is_async' (true/false).",
-            "signature": "add_node(coordinate: str, node_data: dict) -> bool",
-            "function_name": "_meta_add_node",
-            "args_schema": {"coordinate": "str", "node_data": "dict"}
-        }
-        
-        nodes["0.0.2.11"] = {
-            "type": "Callable",
-            "prompt": "Update Node",
-            "description": "Modify an existing node in the tree",
-            "signature": "update_node(coordinate: str, updates: dict) -> bool",
-            "function_name": "_meta_update_node",
-            "args_schema": {"coordinate": "str", "updates": "dict"}
-        }
-        
-        nodes["0.0.2.12"] = {
-            "type": "Callable",
-            "prompt": "Delete Node",
-            "description": "Remove a node from the tree structure",
-            "signature": "delete_node(coordinate: str) -> bool",
-            "function_name": "_meta_delete_node",
-            "args_schema": {"coordinate": "str"}
-        }
-        
-        nodes["0.0.2.13"] = {
-            "type": "Callable",
-            "prompt": "List Nodes",
-            "description": "Show all nodes in the tree structure",
-            "signature": "list_nodes(pattern: str) -> list",
-            "function_name": "_meta_list_nodes",
-            "args_schema": {"pattern": "str"}
-        }
-        
-        nodes["0.0.2.14"] = {
-            "type": "Callable",
-            "prompt": "Get Node",
-            "description": "View details of a specific node",
-            "signature": "get_node(coordinate: str) -> dict",
-            "function_name": "_meta_get_node",
-            "args_schema": {"coordinate": "str"}
-        }
-        
-        # === MCP Generator Section (0.0.3) ===
-        nodes["0.0.3"] = {
-            "type": "Menu",
-            "prompt": "🚀 MCP Server Generator",
-            "description": "Generate MCP servers from TreeShell applications",
-            "signature": "mcp_generator() -> generation_options",
-            "options": {
-                "1": "0.0.3.1",  # init_mcp_config
-                "2": "0.0.3.2",  # show_mcp_config
-                "3": "0.0.3.3",  # update_mcp_config
-                "4": "0.0.3.4",  # generate_mcp_server
-                "5": "0.0.3.5",  # get_mcp_example_config
-            }
-        }
-        
-        nodes["0.0.3.1"] = {
-            "type": "Callable",
-            "prompt": "Initialize MCP Config",
-            "description": "Create new MCP server configuration",
-            "signature": "init_mcp_config(app_name: str, import_path: str, factory_function: str, description: str) -> dict",
-            "function_name": "_meta_init_mcp_config",
-            "args_schema": {
-                "app_name": "str", 
-                "import_path": "str", 
-                "factory_function": "str", 
-                "description": "str"
-            }
-        }
-        
-        nodes["0.0.3.2"] = {
-            "type": "Callable",
-            "prompt": "Show MCP Config",
-            "description": "Display current MCP server configuration",
-            "signature": "show_mcp_config() -> dict",
-            "function_name": "_meta_show_mcp_config"
-        }
-        
-        nodes["0.0.3.3"] = {
-            "type": "Callable",
-            "prompt": "Update MCP Config",
-            "description": "Modify MCP server configuration settings",
-            "signature": "update_mcp_config(updates: dict) -> dict",
-            "function_name": "_meta_update_mcp_config",
-            "args_schema": {"updates": "dict"}
-        }
-        
-        nodes["0.0.3.4"] = {
-            "type": "Callable",
-            "prompt": "Generate MCP Server",
-            "description": "Create complete MCP server package",
-            "signature": "generate_mcp_server(output_dir: str) -> dict",
-            "function_name": "_meta_generate_mcp_server",
-            "args_schema": {"output_dir": "str"}
-        }
-        
-        nodes["0.0.3.5"] = {
-            "type": "Callable",
-            "prompt": "Get Example Config",
-            "description": "Show example MCP configuration format",
-            "signature": "get_mcp_example_config() -> dict",
-            "function_name": "_meta_get_mcp_example_config"
-        }
-        
-        # === OmniTool Section (0.0.4) ===
-        nodes["0.0.4"] = {
-            "type": "Menu",
-            "prompt": "🛠️ OmniTool Access",
-            "description": "Access to HEAVEN's 96+ tool ecosystem",
-            "signature": "omnitool() -> tool_options",
-            "options": {
-                "1": "0.0.4.1",  # list_tools
-                "2": "0.0.4.2",  # get_tool_info
-                "3": "0.0.4.3",  # execute_tool
-            }
-        }
-        
-        nodes["0.0.4.1"] = {
-            "type": "Callable",
-            "prompt": "List All Tools",
-            "description": "Show all available HEAVEN tools",
-            "signature": "list_tools() -> dict",
-            "function_name": "_omni_list_tools"
-        }
-        
-        nodes["0.0.4.2"] = {
-            "type": "Callable",
-            "prompt": "Get Tool Info",
-            "description": "Get detailed information about a specific tool",
-            "signature": "get_tool_info(tool_name: str) -> dict",
-            "function_name": "_omni_get_tool_info",
-            "args_schema": {"tool_name": "str"}
-        }
-        
-        nodes["0.0.4.3"] = {
-            "type": "Callable",
-            "prompt": "Execute Tool",
-            "description": "Execute a HEAVEN tool with parameters",
-            "signature": "execute_tool(tool_name: str, parameters: dict) -> dict",
-            "function_name": "_omni_execute_tool",
-            "args_schema": {
-                "tool_name": "str",
-                "parameters": "dict"
-            }
-        }
-        
-        # === Documentation Section (0.2) ===
-        nodes["0.2"] = {
-            "type": "Menu",
-            "prompt": "📚 Documentation",
-            "description": "TreeShell documentation and command reference. To read a section, use the number + {} (e.g., '2 {}' to read Execution Syntax). Each section contains detailed guides and examples.",
-            "signature": "docs() -> documentation_options",
-            "options": {
-                "1": "0.2.1",  # execution_syntax
-                "2": "0.2.2",  # callable_nodes
-                "3": "0.2.3",  # navigation
-                "4": "0.2.4",  # pathways
-                "5": "0.2.5",  # meta_operations
-                "6": "0.2.6"   # computational_model
-            }
-        }
-        
-        # Execution Syntax Documentation
-        nodes["0.2.1"] = {
-            "type": "Callable",
-            "prompt": "Execution Syntax",
-            "description": "How to execute nodes with different argument patterns",
-            "signature": "execution_syntax() -> syntax_guide",
-            "function_name": "_docs_execution_syntax"
-        }
-        
-        # Callable Nodes Documentation  
-        nodes["0.2.2"] = {
-            "type": "Callable",
-            "prompt": "Callable Nodes",
-            "description": "How to create and use callable nodes with 3 implementation approaches",
-            "signature": "callable_nodes() -> callable_guide",
-            "function_name": "_docs_callable_nodes"
-        }
-        
-        # Navigation Documentation
-        nodes["0.2.3"] = {
-            "type": "Callable",
-            "prompt": "Navigation Commands",
-            "description": "Jump, chain, pathways, and other navigation commands",
-            "signature": "navigation() -> navigation_guide", 
-            "function_name": "_docs_navigation"
-        }
-        
-        # Pathways Documentation
-        nodes["0.2.4"] = {
-            "type": "Callable",
-            "prompt": "Pathway System",
-            "description": "Recording, saving, and executing pathway templates",
-            "signature": "pathways() -> pathway_guide",
-            "function_name": "_docs_pathways"
-        }
-        
-        # Meta Operations Documentation
-        nodes["0.2.5"] = {
-            "type": "Callable",
-            "prompt": "Meta Operations",
-            "description": "Session management, variables, and tree structure operations",
-            "signature": "meta_operations() -> meta_guide",
-            "function_name": "_docs_meta_operations"
-        }
-        
-        # Computational Model Documentation
-        nodes["0.2.6"] = {
-            "type": "Callable",
-            "prompt": "Computational Model",
-            "description": "How TreeShell achieves Turing completeness through self-modification and agent delegation",
-            "signature": "computational_model() -> computational_guide",
-            "function_name": "_docs_computational_model"
-        }
-        
-        # Convert provided nodes to coordinate system starting at 0.1
-        domain_nodes = self._convert_to_coordinates(node_config, "0.1")
-        nodes.update(domain_nodes)
+        # Process all callable nodes (including base nodes and domain nodes) to import external functions
+        processed_count = 0
+        for coordinate, node_data in nodes.items():
+            if node_data.get("type") == "Callable":
+                try:
+                    result_detail, success = self._process_callable_node(node_data, coordinate)
+                    if success:
+                        processed_count += 1
+                        print(f"Debug: Successfully processed callable node {coordinate}: {result_detail}")
+                    else:
+                        print(f"Warning: Failed to process callable node {coordinate}: {result_detail}")
+                except Exception as e:
+                    print(f"Error: Exception processing callable node {coordinate}: {e}")
+                    import traceback
+                    traceback.print_exc()
+        print(f"Debug: Processed {processed_count} callable nodes total")
         
         return nodes
     
@@ -499,7 +298,8 @@ class TreeShellBase:
             "recording_pathway": self.recording_pathway,
             "app_id": self.app_id,
             "domain": self.domain,
-            "role": self.role
+            "role": self.role,
+            "shortcuts": self.session_vars.get("_shortcuts", {})  # Include shortcuts for game state
         }
         base.update(payload)
         return base
@@ -513,19 +313,181 @@ class TreeShellBase:
         for key, value in args.items():
             if isinstance(value, str):
                 if value.startswith("$"):
+                    # Handle simple variable substitution: "$variable_name"
                     var_name = value[1:]
-                    if var_name in self.session_vars:
+                    # Special handling for agent config resolution
+                    if var_name == "selected_agent_config" and hasattr(self, '_resolve_agent_config'):
+                        config_identifier = self.session_vars.get("selected_agent_config")
+                        if config_identifier:
+                            substituted[key] = self._resolve_agent_config(config_identifier)
+                        else:
+                            substituted[key] = value  # Keep original if not found
+                    elif var_name in self.session_vars:
                         substituted[key] = self.session_vars[var_name]
                     elif var_name in self.chain_results:
                         substituted[key] = self.chain_results[var_name]
                     else:
                         substituted[key] = value  # Keep original if not found
+                elif "{$" in value:
+                    # Handle string formatting with variables: "Hello {$name}, you are {$role}"
+                    substituted[key] = self._format_string_with_variables(value)
                 else:
                     substituted[key] = value
             else:
                 substituted[key] = value
         return substituted
     
+    def _format_string_with_variables(self, text: str) -> str:
+        """Format string with session variables using {$variable_name} syntax."""
+        import re
+        
+        # Find all {$variable_name} patterns
+        pattern = r'\{\$([^}]+)\}'
+        
+        def replace_var(match):
+            var_name = match.group(1)
+            # Special handling for agent config resolution
+            if var_name == "selected_agent_config" and hasattr(self, '_resolve_agent_config'):
+                config_identifier = self.session_vars.get("selected_agent_config")
+                if config_identifier:
+                    resolved_config = self._resolve_agent_config(config_identifier)
+                    return str(resolved_config)
+                else:
+                    return match.group(0)  # Keep original if not found
+            elif var_name in self.session_vars:
+                return str(self.session_vars[var_name])
+            elif var_name in self.chain_results:
+                return str(self.chain_results[var_name])
+            else:
+                return match.group(0)  # Keep original if not found
+        
+        return re.sub(pattern, replace_var, text)
+    
+    def _process_callable_node(self, node_data: dict, coordinate: str) -> tuple:
+        """
+        Shared logic for processing callable nodes with imports/function_code.
+        Used by both _build_coordinate_nodes and _meta_add_node.
+        
+        Returns: (result_detail_string, success_bool)
+        """
+        if node_data.get("type") != "Callable":
+            return "static node", True
+        
+        function_name = node_data.get("function_name")
+        if not function_name:
+            return "callable node without function_name", False
+        
+        is_async = node_data.get("is_async", False)
+        
+        # Approach 1: Import from external module
+        if "import_path" in node_data and "import_object" in node_data:
+            import_path = node_data["import_path"]
+            import_object = node_data["import_object"]
+            
+            try:
+                # Dynamic import: from import_path import import_object
+                module = __import__(import_path, fromlist=[import_object])
+                imported_func = getattr(module, import_object)
+                
+                # All imported functions go to registries (not instance attributes)
+                if is_async:
+                    self.register_async_function(function_name, imported_func)
+                else:
+                    self.register_sync_function(function_name, imported_func)
+                
+                return f"imported {import_object} from {import_path} ({'async' if is_async else 'sync'})", True
+                
+            except ImportError as e:
+                return f"Failed to import {import_object} from {import_path}: {str(e)}", False
+            except AttributeError as e:
+                return f"Object {import_object} not found in {import_path}: {str(e)}", False
+            except Exception as e:
+                return f"Import failed: {str(e)}", False
+        
+        # Approach 2: Execute function code dynamically
+        elif "function_code" in node_data:
+            function_code = node_data["function_code"]
+            
+            try:
+                # Create function from code string with enhanced globals
+                exec_globals = {
+                    "__builtins__": __builtins__,
+                    "self": self,  # Allow access to shell instance
+                }
+                exec(function_code, exec_globals)
+                
+                # Register the function based on async flag
+                if function_name in exec_globals:
+                    if is_async:
+                        self.register_async_function(function_name, exec_globals[function_name])
+                    else:
+                        self.register_sync_function(function_name, exec_globals[function_name])
+                    return f"compiled function code ({'async' if is_async else 'sync'})", True
+                else:
+                    return f"Function {function_name} not found in provided code", False
+                    
+            except Exception as e:
+                return f"Failed to compile function code: {str(e)}", False
+        
+        # Approach 3: Function name only (assumes function already exists)
+        else:
+            # Check if function already exists
+            if is_async:
+                if function_name not in self.async_functions:
+                    return f"Async function {function_name} not found in async registry", False
+            else:
+                # Check sync registry first, then instance attributes
+                if function_name not in self.sync_functions and not hasattr(self, function_name):
+                    return f"Sync function {function_name} not found in sync registry or as instance method", False
+            
+            return f"using existing function ({'async' if is_async else 'sync'})", True
+    
+    def _get_function_docs(self, function_name: str, node: dict = None) -> tuple:
+        """Extract signature and docstring from function with graceful fallbacks."""
+        import inspect
+        
+        # Try to get the function from registries
+        function = None
+        if function_name in self.async_functions:
+            function = self.async_functions[function_name]
+        elif function_name in self.sync_functions:
+            function = self.sync_functions[function_name]
+        elif hasattr(self, function_name):
+            function = getattr(self, function_name)
+        
+        # If not found and we have node data, try to import it
+        if not function and node:
+            if "import_path" in node and "import_object" in node:
+                try:
+                    import_path = node["import_path"]
+                    import_object = node["import_object"]
+                    module = __import__(import_path, fromlist=[import_object])
+                    function = getattr(module, import_object)
+                except Exception:
+                    pass  # Will fall through to warning message
+        
+        if not function:
+            return f"⚠️ Function {function_name} not found", f"⚠️ Could not display docstring for {function_name}"
+        
+        # Extract signature with fallback
+        try:
+            signature = str(inspect.signature(function))
+            signature = f"{function_name}{signature}"
+        except Exception:
+            signature = f"⚠️ Could not extract signature for {function_name}"
+        
+        # Extract docstring with fallback
+        try:
+            docstring = function.__doc__
+            if not docstring or not docstring.strip():
+                docstring = "⚠️ No docstring available"
+            else:
+                docstring = docstring.strip()
+        except Exception:
+            docstring = f"⚠️ Could not display docstring for {function_name}"
+        
+        return signature, docstring
+
     def _get_node_menu(self, node_coord: str) -> dict:
         """Get menu display for a node."""
         node = self.nodes.get(node_coord)
@@ -564,10 +526,52 @@ class TreeShellBase:
             "exit"
         ]
         
+        # Get description and signature
+        description = node.get("description", "No description available")
+        signature = "No signature available"
+        
+        # For callable nodes, try to extract function documentation
+        if node.get("type") == "Callable":
+            function_name = node.get("function_name")
+            if function_name:
+                func_signature, func_docstring = self._get_function_docs(function_name, node)
+                signature = func_signature
+                # Use docstring as description if available and not a fallback warning
+                if func_docstring and not func_docstring.startswith("⚠️"):
+                    description = func_docstring
+                elif func_docstring:
+                    # Show both original description and warning
+                    description = f"{description}\n\n{func_docstring}"
+        
+        # Use DisplayBrief for root node description
+        if node_coord == "0":
+            from .display_brief import DisplayBrief
+            shortcuts = self.session_vars.get("_shortcuts", {})
+            if shortcuts:
+                display_brief = DisplayBrief(
+                    shortcuts=shortcuts, 
+                    role=self.role,
+                    app_id=self.app_id,
+                    domain=self.domain,
+                    about_app=self.about_app,
+                    about_domain=self.about_domain
+                )
+                description = display_brief.to_display_string()
+            else:
+                display_brief = DisplayBrief(
+                    role=self.role,
+                    app_id=self.app_id,
+                    domain=self.domain,
+                    about_app=self.about_app,
+                    about_domain=self.about_domain
+                )
+                if display_brief.has_content():
+                    description = display_brief.to_display_string()
+        
         return {
             "prompt": node.get("prompt", f"Node {node_coord}"),
-            "description": node.get("description", "No description available"),
-            "signature": node.get("signature", "No signature available"),
+            "description": description,
+            "signature": signature,
             "menu_options": menu_options,
             "universal_commands": universal_commands,
             "node_type": node.get("type"),

@@ -24,314 +24,22 @@ from .approval_system import ApprovalQueue
 # Import MCP generator
 from .mcp_generator import generate_mcp_from_config, generate_mcp_from_dict, TreeShellMCPConfig, MCPGenerator
 
-# Main TreeShell class combining all functionality
-class TreeShell(
-    TreeShellBase,
-    MetaOperationsMixin,
-    PathwayManagementMixin,
-    CommandHandlersMixin,
-    RSIAnalysisMixin,
-    ExecutionEngineMixin
-):
-    """
-    Complete TreeShell implementation combining all modules.
-    
-    Provides geometric tree navigation with live variable persistence,
-    pathway recording and templates, RSI analysis, and comprehensive
-    command handling.
-    """
-    
-    def __init__(self, graph_config: dict):
-        """Initialize TreeShell with graph configuration."""
-        super().__init__(graph_config)
-    
-    def _manage_pathways(self, final_args: dict) -> tuple:
-        """Show pathway management interface."""
-        pathways_info = {
-            "saved_pathways": len(self.saved_pathways),
-            "saved_templates": len(self.saved_templates),
-            "pathway_list": list(self.saved_pathways.keys()),
-            "ontology_domains": len(self.graph_ontology["domains"]),
-            "crystallization_history": len(self.graph_ontology["crystallization_history"])
-        }
-        
-        return pathways_info, True
-    
-    # === Documentation Functions ===
-    
-    def _docs_execution_syntax(self, final_args: dict) -> tuple:
-        """Show execution syntax documentation."""
-        docs = """📋 **Execution Syntax Guide**
+# Import Shell classes from shells module
+from .shells import TreeShell, AgentTreeShell, UserTreeShell, FullstackTreeShell
 
-When executing callable nodes, use these argument patterns:
-
-**With Arguments (Dictionary):**
-• `1 {"name": "Alice", "age": 30}` → calls func({"name": "Alice", "age": 30})
-• `1 {"message": "Hello World"}` → calls func({"message": "Hello World"})
-
-**Empty Arguments (Empty Dictionary):**  
-• `1 {}` → calls func({}) - function receives empty dict
-
-**No Arguments (Empty Parentheses):**
-• `1 ()` → calls func() - function called with zero arguments
-• Use this for functions like os.getcwd() that take no parameters
-
-**Examples:**
-• Math function: `1 {"a": 5, "b": 3}`
-• Status check: `1 {}`  
-• Get directory: `1 ()`
-
-**Jump with Arguments:**
-• `jump 0.1.5 {"data": "value"}` → navigate and execute with args
-• `jump 0.1.5 ()` → navigate and execute with no args"""
-        
-        return docs, True
-    
-    def _docs_callable_nodes(self, final_args: dict) -> tuple:
-        """Show callable nodes documentation."""
-        docs = """🔧 **Callable Nodes Guide**
-
-Create callable nodes using add_node (0.0.2.10) with 3 approaches:
-
-**1. Import Existing Function:**
-```json
-{
-  "type": "Callable",
-  "prompt": "Get Directory", 
-  "function_name": "_get_dir",
-  "is_async": false,
-  "import_path": "os",
-  "import_object": "getcwd"
-}
-```
-
-**2. Dynamic Function Code:**
-```json
-{
-  "type": "Callable",
-  "prompt": "System Info",
-  "function_name": "_sys_info", 
-  "is_async": false,
-  "function_code": "def _sys_info(args): import os; return f'Dir: {os.getcwd()}', True"
-}
-```
-
-**3. Use Existing Function:**
-```json
-{
-  "type": "Callable",
-  "prompt": "List Variables",
-  "function_name": "_meta_list_vars",
-  "is_async": false
-}
-```
-
-**Required Fields:**
-• `type`: "Callable"
-• `prompt`: Display name
-• `function_name`: Internal function name
-• `is_async`: true/false for async handling
-
-**Execution:** Use syntax from 0.2.1 (Execution Syntax)"""
-        
-        return docs, True
-    
-    def _docs_navigation(self, final_args: dict) -> tuple:
-        """Show navigation documentation.""" 
-        docs = """🧭 **Navigation Commands**
-
-**Basic Navigation:**
-• `1`, `2`, `3` → Navigate to menu options
-• `back` → Go back one level
-• `menu` → Go to nearest menu (find closest .0 node)
-• `exit` → Exit TreeShell
-
-**Jump Commands:**
-• `jump 0.1.5` → Navigate directly to coordinate
-• `jump 0.1.5 {"arg": "value"}` → Navigate and execute with args
-• `jump 0.1.5 ()` → Navigate and execute with no args
-
-**Chain Execution:**
-• `chain 0.1.1 {} -> 0.1.2 {"data": "test"}` → Execute sequence
-• Results from step1 available as variables in step2
-
-**Universal Commands Available Everywhere:**
-• jump, chain, build_pathway, save_emergent_pathway
-• follow_established_pathway, show_execution_history
-• analyze_patterns, crystallize_pattern, rsi_insights
-
-**Coordinate System:**
-• Every position has implicit .0 (menu/introspect)  
-• 0 = root, 0.0 = settings, 0.1 = domain, 0.2 = docs
-• Navigate hierarchically: 0 → 0.1 → 0.1.3 → 0.1.3.2"""
-        
-        return docs, True
-    
-    def _docs_pathways(self, final_args: dict) -> tuple:
-        """Show pathway system documentation."""
-        docs = """🛤️ **Pathway System**
-
-**Recording Pathways:**
-• `build_pathway` → Start recording your actions
-• Navigate and execute commands (they get recorded)
-• `save_emergent_pathway mypath` → Save recorded pathway
-
-**From History:**
-• `save_emergent_pathway_from_history mypath [0,1,2]` → Create from specific steps
-• `save_emergent_pathway_from_history mypath [0-5]` → Create from range
-• `show_execution_history` → See available steps
-
-**Using Pathways:**
-• `follow_established_pathway` → Show all pathways
-• `follow_established_pathway mypath {"arg": "value"}` → Execute with args
-• `follow_established_pathway domain=math` → Query by domain
-• `follow_established_pathway tags=arithmetic` → Query by tags
-
-**Analysis (RSI System):**
-• `analyze_patterns` → Find optimization opportunities
-• `crystallize_pattern mypattern` → Create reusable pattern
-• `rsi_insights` → Show learning insights
-
-**Pathway Management:** 
-• Navigate to 0.0.1 for pathway management interface
-• View saved pathways, templates, and ontology data"""
-        
-        return docs, True
-    
-    def _docs_meta_operations(self, final_args: dict) -> tuple:
-        """Show meta operations documentation."""
-        docs = """⚙️ **Meta Operations (0.0.2)**
-
-**Session Variables:**
-• `save_var` → Store value: {"name": "myvar", "value": "data"}
-• `get_var` → Retrieve: {"name": "myvar"}  
-• `append_to_var` → Add to list/string: {"name": "myvar", "value": "more"}
-• `delete_var` → Remove: {"name": "myvar"}
-• `list_vars` → Show all variables: {}
-
-**File Operations:**
-• `save_to_file` → Write var to file: {"filename": "data.json", "var_name": "myvar"}
-• `load_from_file` → Read file to var: {"filename": "data.json", "var_name": "loaded"}
-• `export_session` → Save complete session: {"filename": "session.json"}
-
-**Tree Structure CRUD:**
-• `add_node` → Create new nodes (see 0.2.2 for details)
-• `update_node` → Modify existing: {"coordinate": "0.1.5", "updates": {...}}
-• `delete_node` → Remove: {"coordinate": "0.1.5"}
-• `list_nodes` → Show nodes: {"pattern": "0.1"} (optional filter)
-• `get_node` → View details: {"coordinate": "0.1.5"}
-
-**Session Info:**
-• `session_stats` → Memory usage, variables, nodes count: {}
-
-**MCP Generator:** Navigate to 0.0.3 for MCP server generation
-**OmniTool Access:** Navigate to 0.0.4 for HEAVEN tool ecosystem"""
-        
-        return docs, True
-    
-    def _docs_computational_model(self, final_args: dict) -> tuple:
-        """Show computational model documentation."""
-        docs = """🧠 **Computational Model**
-
-TreeShell achieves Turing completeness through three architectural layers:
-
-**1. Self-Modification (CRUD Operations)**
-• Tree structure operations allow runtime system evolution
-• `add_node`, `update_node`, `delete_node` modify computational capabilities
-• System can rewrite its own components and create new pathways
-• Example: Agent creates a new workflow by adding connected callable nodes
-
-**2. Hierarchical Agent Delegation**
-```
-FullstackTreeShell (orchestrator)
-  ↓ spawns & manages
-UserTreeShell (human approval layer)  
-  ↓ spawns & monitors
-AgentTreeShell (restricted execution environment)
-```
-
-• Each layer has different capabilities and restrictions
-• Approval workflows create computational gates
-• Quarantine system provides sandboxed execution
-• Nested delegation enables complex multi-agent systems
-
-**3. LLM-Powered Control Flow**
-• AI agents provide arbitrary logical reasoning capabilities
-• Natural language instructions → computational decisions
-• If/then/else logic through agent reasoning: "if result contains error, retry with different parameters"
-• While loops through pathway repetition: "keep processing until condition met"
-• Dynamic branching: agents choose execution paths based on context
-
-**Workflow Programming Language:**
-TreeShell becomes a programming language where:
-• **Nodes** = functions/procedures
-• **Coordinates** = memory addresses  
-• **Chains** = execution sequences with data flow
-• **Pathways** = stored programs/procedures
-• **Session variables** = persistent state
-• **Tree CRUD** = self-modifying code capabilities
-• **Agent reasoning** = dynamic control flow
-
-**Example Turing-Complete Workflow:**
-1. Agent analyzes data and creates processing nodes
-2. Builds chain execution pipeline with conditional logic  
-3. Records successful patterns as reusable pathways
-4. System evolves by adding new capabilities through CRUD
-5. Higher-level agents orchestrate multiple sub-agents
-
-This creates an adaptive computational substrate where intelligent agents can dynamically build, modify, and orchestrate computational systems that extend their own capabilities."""
-        
-        return docs, True
-
-
-class AgentTreeShell(TreeShell, AgentTreeReplMixin):
-    """
-    Agent-level TreeShell with quarantine restrictions.
-    Agents can create workflows but cannot approve them.
-    """
-    
-    def __init__(self, graph_config: dict, session_id: str = None, approval_callback=None):
-        TreeShell.__init__(self, graph_config)
-        self.__init_agent_features__(session_id, approval_callback)
-    
-    def handle_command(self, command: str) -> dict:
-        """Override to use agent command handling."""
-        return self.handle_command_agent(command)
-
-
-class UserTreeShell(TreeShell, UserTreeReplMixin):
-    """
-    User-level TreeShell with agent management and approval capabilities.
-    Humans can launch agents and approve/reject their workflows.
-    """
-    
-    def __init__(self, config: dict = None, parent_approval_callback=None):
-        # Handle nested config structure
-        if config is None:
-            # Use default agent management hub
-            graph_config = self._get_user_interface_config()
-        elif "graph" in config:
-            # Merge app config into graph config
-            graph_config = config["graph"].copy()
-            if "app" in config:
-                graph_config.update(config["app"])
-        else:
-            # Legacy: assume config is graph config
-            graph_config = config
-        
-        TreeShell.__init__(self, graph_config)
-        self.__init_user_features__(parent_approval_callback)
-
-
-class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
-    """
-    Complete fullstack TreeShell supporting nested human-agent interactions.
-    """
-    
-    def __init__(self, config: dict = None, parent_approval_callback=None):
-        UserTreeShell.__init__(self, config, parent_approval_callback)
-        self.__init_fullstack_features__(parent_approval_callback)
-
+# Import agent config management functions
+from .agent_config_management import (
+    equip_system_prompt, unequip_system_prompt, list_system_prompts,
+    equip_tool, unequip_tool, list_tools,
+    equip_provider, unequip_provider, list_providers,
+    equip_model, unequip_model, list_models,
+    equip_temperature, unequip_temperature, list_temperature,
+    equip_max_tokens, unequip_max_tokens, list_max_tokens,
+    equip_name, unequip_name, list_names,
+    equip_prompt_block, unequip_prompt_block, list_prompt_blocks,
+    save_config_as, copy_existing, list_saved_configs, preview_dynamic_config,
+    get_dynamic_config, reset_dynamic_config
+)
 
 # Public API
 __all__ = [
@@ -357,4 +65,15 @@ __all__ = [
     "generate_mcp_from_dict", 
     "TreeShellMCPConfig",
     "MCPGenerator",
+    # Agent Config Management Functions
+    "equip_system_prompt", "unequip_system_prompt", "list_system_prompts",
+    "equip_tool", "unequip_tool", "list_tools",
+    "equip_provider", "unequip_provider", "list_providers",
+    "equip_model", "unequip_model", "list_models",
+    "equip_temperature", "unequip_temperature", "list_temperature",
+    "equip_max_tokens", "unequip_max_tokens", "list_max_tokens",
+    "equip_name", "unequip_name", "list_names",
+    "equip_prompt_block", "unequip_prompt_block", "list_prompt_blocks",
+    "save_config_as", "copy_existing", "list_saved_configs", "preview_dynamic_config",
+    "get_dynamic_config", "reset_dynamic_config",
 ]

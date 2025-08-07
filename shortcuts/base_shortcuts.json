@@ -1,0 +1,82 @@
+{
+  "nav": {
+    "type": "jump",
+    "coordinate": "0",
+    "description": "Navigate to main menu"
+  },
+  "home": {
+    "type": "jump", 
+    "coordinate": "0",
+    "description": "Go to root menu"
+  },
+  "settings": {
+    "type": "jump",
+    "coordinate": "0.0",
+    "description": "Navigate to settings and management"
+  },
+  "docs": {
+    "type": "jump",
+    "coordinate": "0.2", 
+    "description": "Navigate to documentation"
+  },
+  "help": {
+    "type": "jump",
+    "coordinate": "0.2",
+    "description": "Navigate to documentation"
+  },
+  "shortcuts": {
+    "type": "jump",
+    "coordinate": "0.2.7",
+    "description": "Navigate to shortcuts documentation"
+  },
+  "lang": {
+    "type": "chain",
+    "template": "0.0.8 {}",
+    "analysis": {
+      "type": "unconstrained",
+      "entry_args": [],
+      "total_variables": []
+    },
+    "description": "List all active shortcuts"
+  },
+  "vars": {
+    "type": "chain",
+    "template": "0.0.2.5 {}",
+    "analysis": {
+      "type": "unconstrained",
+      "entry_args": [],
+      "total_variables": []
+    },
+    "description": "List all session variables"
+  },
+  "save": {
+    "type": "chain",
+    "template": "0.0.2.1 {\"name\": \"$name\", \"value\": \"$value\"}",
+    "analysis": {
+      "type": "constrained", 
+      "entry_args": ["name", "value"],
+      "total_variables": ["name", "value"]
+    },
+    "description": "Save a variable to session"
+  },
+  "load": {
+    "type": "chain",
+    "template": "0.0.2.7 {\"filename\": \"$file\", \"var_name\": \"$var\"}",
+    "analysis": {
+      "type": "constrained",
+      "entry_args": ["file", "var"], 
+      "total_variables": ["file", "var"]
+    },
+    "description": "Load file content into variable"
+  },
+  "export": {
+    "type": "chain",
+    "template": "0.0.2.8 {\"filename\": \"$filename\"}",
+    "analysis": {
+      "type": "constrained",
+      "entry_args": ["filename"],
+      "total_variables": ["filename"]
+    },
+    "description": "Export session to file"
+  }
+}

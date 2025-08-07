@@ -129,12 +129,99 @@ class CommandHandlersMixin:
                 "menu": self._get_node_menu(target_coord)
             })
     
+    def _parse_chain_with_operands(self, chain_str: str) -> list:
+        """Parse chain string with operands into execution plan.
+        
+        Uses improved operand parser with Lark validation.
+        """
+        # Try to validate with Lark for better error messages
+        try:
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from lark_parser import create_lark_parser
+            
+            lark_parser = create_lark_parser()
+            if lark_parser:
+                # Validate syntax with Lark
+                result = lark_parser.parse(f"chain {chain_str}")
+                if not result["success"]:
+                    # Return error with better Lark message
+                    return [{"error": f"Syntax error: {result['error']}"}]
+        except:
+            pass  # Lark not available, continue with manual parsing
+        
+        # Use our working operand parser 
+        try:
+            from operand_parser import OperandParser
+            
+            # Check if chain has operands
+            has_operands = any(op in chain_str for op in [' and ', ' or ', ' if ', ' while '])
+            
+            if has_operands:
+                parser = OperandParser()
+                return parser.parse_chain(chain_str)
+        except:
+            pass  # Fall back to simple parsing
+        
+        # Simple sequential parsing fallback
+        steps = chain_str.split(" -> ")
+        execution_plan = []
+        for i, step in enumerate(steps):
+            execution_plan.append({
+                "type": "sequential",
+                "step": step.strip(), 
+                "target": step.strip().split(None, 1)[0],
+                "args_str": step.strip().split(None, 1)[1] if len(step.strip().split(None, 1)) > 1 else "{}",
+                "index": i,
+                "segment": 0
+            })
+        return execution_plan
+    
     async def _handle_chain(self, args_str: str) -> dict:
-        """Handle chain command - sequential execution."""
+        """Handle chain command - with control flow operands support."""
         if not args_str:
             return {"error": "chain requires sequence specification"}
             
-        # Parse chain sequence: node1 args1 -> node2 args2 -> node3 args3
+        # Parse chain with operand support
+        execution_plan = self._parse_chain_with_operands(args_str)
+        
+        # Check if we have operands
+        has_operands = any(step.get('operator') or step.get('branch') or step.get('loop') 
+                          for step in execution_plan)
+        
+        if has_operands:
+            # Use operand executor for complex chains
+            import sys
+            import os
+            sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from operand_executor import OperandExecutor
+            
+            executor = OperandExecutor(self)
+            result = await executor.execute_plan(execution_plan)
+            
+            # Format results for display
+            chain_results = []
+            for i, res in enumerate(result['results']):
+                chain_results.append({
+                    "step": i + 1,
+                    "target": res.get('target'),
+                    "resolved": res.get('resolved'),
+                    "success": res.get('success'),
+                    "operator": res.get('operator'),
+                    "branch": res.get('step', {}).get('branch'),
+                    "result": res.get('data')
+                })
+            
+            return self._build_response({
+                "action": "chain_with_operands",
+                "execution_plan": execution_plan,
+                "chain_results": chain_results,
+                "total_steps": result['total_steps'],
+                "executed_steps": result['executed_steps']
+            })
+        
+        # Original sequential chain logic for backward compatibility
         steps = args_str.split(" -> ")
         chain_results = []
         
@@ -152,17 +239,34 @@ class CommandHandlersMixin:
             except json.JSONDecodeError:
                 return {"error": f"Invalid JSON in step {i+1}: {step_args_str}"}
                 
-            if target_coord not in self.nodes:
-                return {"error": f"Target coordinate {target_coord} not found in step {i+1}"}
+            # Check if target is a shortcut first, then resolve to coordinate
+            final_coord = target_coord
+            shortcuts = self.session_vars.get("_shortcuts", {})
+            
+            if target_coord in shortcuts:
+                shortcut = shortcuts[target_coord]
+                if isinstance(shortcut, dict):
+                    if shortcut.get("type") == "jump":
+                        final_coord = shortcut["coordinate"]
+                    elif shortcut.get("type") == "chain":
+                        # Chain shortcuts in chains need special handling
+                        return {"error": f"Cannot use chain shortcut '{target_coord}' inside chain command at step {i+1}"}
+                else:
+                    # Legacy shortcut format
+                    final_coord = shortcut
+            
+            if final_coord not in self.nodes:
+                return {"error": f"Target coordinate {final_coord} not found in step {i+1} (resolved from '{target_coord}')"}
                 
             # Execute step
-            result, success = await self._execute_action(target_coord, step_args)
+            result, success = await self._execute_action(final_coord, step_args)
             if not success:
                 return {"error": f"Step {i+1} failed: {result}"}
                 
             chain_results.append({
                 "step": i+1,
-                "target": target_coord,
+                "target": target_coord,  # Keep original shortcut name for display
+                "resolved_coord": final_coord if target_coord != final_coord else None,  # Show resolution only if different
                 "args": step_args,
                 "result": result
             })
@@ -465,6 +569,302 @@ class CommandHandlersMixin:
             "menu": self._get_node_menu(self.current_position)
         })
     
+    def _handle_nav(self) -> dict:
+        """Show complete tree navigation overview."""
+        tree_structure = {}
+        
+        # Build hierarchical structure from flat nodes
+        for coordinate, node in self.nodes.items():
+            parts = coordinate.split(".")
+            current = tree_structure
+            
+            # Navigate/create nested structure
+            for i, part in enumerate(parts):
+                coord_so_far = ".".join(parts[:i+1])
+                
+                if part not in current:
+                    current[part] = {
+                        "coordinate": coord_so_far,
+                        "node": self.nodes.get(coord_so_far, {}),
+                        "children": {}
+                    }
+                
+                if i == len(parts) - 1:
+                    # This is the final node, update its info
+                    current[part]["node"] = node
+                else:
+                    # Navigate deeper
+                    current = current[part]["children"]
+        
+        # Format tree structure for display
+        def format_tree_level(level_dict, depth=0, prefix="", is_last=True):
+            lines = []
+            # Sort keys numerically by coordinate parts, not alphabetically
+            def sort_key(x):
+                parts = x.split('.')
+                return (len(parts), [int(p) if p.isdigit() else p for p in parts])
+            
+            sorted_keys = sorted(level_dict.keys(), key=sort_key)
+            
+            for i, key in enumerate(sorted_keys):
+                is_last_item = (i == len(sorted_keys) - 1)
+                item = level_dict[key]
+                node = item["node"]
+                coordinate = item["coordinate"]
+                
+                # Get node info
+                node_type = node.get("type", "Unknown")
+                prompt = node.get("prompt", "No prompt")
+                description = node.get("description", "")
+                
+                # Ontological emoji DSL - each emoji represents a semantic category
+                if node_type == "Menu":
+                    # Domain-specific navigation classifiers
+                    if depth == 0:  # Root
+                        icon = "🔮"  # Root crystal (special case)
+                    elif "Brain" in prompt:
+                        icon = "🧠"  # Brain/AI/knowledge domain
+                    elif "Doc" in prompt or "Help" in prompt:
+                        icon = "📜"  # Documentation/help domain  
+                    elif "MCP" in prompt or "Generator" in prompt:
+                        icon = "🚀"  # Generation/creation domain
+                    elif "OmniTool" in prompt or "Tool" in prompt:
+                        icon = "🛠️"  # Tools/utilities domain
+                    elif "Meta" in prompt or "Operations" in prompt:
+                        icon = "🌀"  # Meta/system operations domain
+                    elif "Agent" in prompt:
+                        icon = "🤖"  # Agent systems domain
+                    else:
+                        icon = "🗺️"  # General navigation hub
+                    options_count = len(node.get("options", {}))
+                    info = f"({options_count} paths)"
+                elif node_type == "Callable":
+                    # Universal executable classifier
+                    icon = "⚙️"  # All executable functions use gear
+                    function_name = node.get("function_name", "")
+                    info = f"({function_name})" if function_name else ""
+                else:
+                    icon = "❔"  # Unknown type
+                    info = f"({node_type})"
+                
+                # ASCII tree structure
+                if depth == 0:
+                    # Root node - no prefix
+                    current_prefix = ""
+                    line_prefix = ""
+                else:
+                    # Branch characters
+                    branch = "└── " if is_last_item else "├── "
+                    line_prefix = prefix + branch
+                
+                # Build line with ASCII tree structure
+                line = f"{line_prefix}{icon} {coordinate}: {prompt} {info}"
+                if description and len(description) < 50:
+                    line += f" - {description}"
+                
+                lines.append(line)
+                
+                # Add children with proper prefix continuation
+                if item["children"]:
+                    if depth == 0:
+                        # Root level - children start with empty prefix but get tree structure
+                        child_prefix = ""
+                    else:
+                        # Add vertical continuation or spaces
+                        continuation = "│   " if not is_last_item else "    "
+                        child_prefix = prefix + continuation
+                    
+                    lines.extend(format_tree_level(item["children"], depth + 1, child_prefix, is_last_item))
+            
+            return lines
+        
+        tree_lines = format_tree_level(tree_structure, 0, "", True)
+        tree_display = "\n".join(tree_lines)
+        
+        # Add summary stats
+        summary = {
+            "total_nodes": len(self.nodes),
+            "menu_nodes": len([n for n in self.nodes.values() if n.get("type") == "Menu"]),
+            "callable_nodes": len([n for n in self.nodes.values() if n.get("type") == "Callable"]),
+            "current_position": self.current_position,
+            "max_depth": max(len(coord.split(".")) for coord in self.nodes.keys()) if self.nodes else 0
+        }
+        
+        return self._build_response({
+            "action": "navigation_overview",
+            "tree_structure": tree_display,
+            "summary": summary,
+            "usage": "Use 'jump <coordinate>' to navigate directly to any node",
+            "message": f"Navigation overview: {summary['total_nodes']} total nodes"
+        })
+    
+    def _handle_shortcut(self, args_str: str) -> dict:
+        """Create semantic shortcut for jump commands or chain templates."""
+        if not args_str:
+            return {"error": "Usage: shortcut <alias> <coordinate|\"chain_template\"> - e.g., shortcut brain 0.0.6 or shortcut workflow \"0.1.1 {} -> 0.1.2 {\\\"data\\\": \\\"$step1_result\\\"}\""}
+        
+        # Handle quoted chain templates vs simple coordinates
+        if args_str.count('"') >= 2:
+            # Chain template format: shortcut alias "chain template"
+            first_quote = args_str.find('"')
+            alias = args_str[:first_quote].strip()
+            chain_template = args_str[first_quote+1:]
+            if chain_template.endswith('"'):
+                chain_template = chain_template[:-1]
+            
+            if not alias:
+                return {"error": "Alias cannot be empty"}
+                
+            # Validate chain template by parsing it
+            try:
+                # Simple validation - chain can be single step or multiple with ->
+                if not chain_template.strip():
+                    return {"error": "Chain template cannot be empty"}
+                
+                # Analyze template for constraints (like pathway analysis)
+                template_analysis = self._analyze_chain_template_simple(chain_template)
+                
+                # Initialize shortcuts storage if not exists
+                if "_shortcuts" not in self.session_vars:
+                    self.session_vars["_shortcuts"] = {}
+                
+                # Store as chain shortcut
+                shortcut_data = {
+                    "type": "chain",
+                    "template": chain_template,
+                    "analysis": template_analysis
+                }
+                self.session_vars["_shortcuts"][alias] = shortcut_data
+                
+                # Save to appropriate JSON file
+                self._save_shortcut_to_file(alias, shortcut_data)
+                
+                return self._build_response({
+                    "action": "create_shortcut",
+                    "alias": alias,
+                    "type": "chain",
+                    "template": chain_template,
+                    "required_args": template_analysis.get("entry_args", []),
+                    "usage": f"Use '{alias} {{args}}' to execute chain template" + (f" (requires: {', '.join(template_analysis.get('entry_args', []))})" if template_analysis.get('entry_args') else ""),
+                    "message": f"Chain shortcut '{alias}' created ({template_analysis.get('type', 'unconstrained')} template)"
+                })
+                
+            except Exception as e:
+                return {"error": f"Invalid chain template: {str(e)}"}
+        
+        else:
+            # Simple coordinate format: shortcut alias coordinate
+            parts = args_str.split(None, 1)
+            if len(parts) != 2:
+                return {"error": "Usage: shortcut <alias> <coordinate> - e.g., shortcut brain 0.0.6"}
+            
+            alias, coordinate = parts
+            
+            # Validate coordinate exists
+            if coordinate not in self.nodes:
+                return {"error": f"Coordinate '{coordinate}' not found. Use 'nav' to see all available nodes."}
+            
+            # Get node info for display
+            node = self.nodes[coordinate]
+            node_prompt = node.get("prompt", "Unknown")
+            
+            # Initialize shortcuts storage if not exists
+            if "_shortcuts" not in self.session_vars:
+                self.session_vars["_shortcuts"] = {}
+            
+            # Store as simple jump shortcut
+            shortcut_data = {
+                "type": "jump",
+                "coordinate": coordinate
+            }
+            self.session_vars["_shortcuts"][alias] = shortcut_data
+            
+            # Save to appropriate JSON file
+            self._save_shortcut_to_file(alias, shortcut_data)
+            
+            return self._build_response({
+                "action": "create_shortcut",
+                "alias": alias,
+                "type": "jump",
+                "coordinate": coordinate,
+                "target": node_prompt,
+                "usage": f"Use '{alias}' to jump to {coordinate} ({node_prompt})",
+                "message": f"Jump shortcut '{alias}' → {coordinate} ({node_prompt}) created"
+            })
+    
+    def _analyze_chain_template_simple(self, chain_template: str) -> dict:
+        """Simple analysis of chain template for variable constraints."""
+        import re
+        
+        # Find all variables in the template (format: $variable_name)
+        variables = set(re.findall(r'\$(\w+)', chain_template))
+        # Remove step result variables (generated automatically)
+        entry_args = [var for var in variables if not var.startswith('step') and var != 'last_result']
+        
+        template_type = "constrained" if entry_args else "unconstrained"
+        
+        return {
+            "type": template_type,
+            "entry_args": entry_args,
+            "total_variables": list(variables)
+        }
+    
+    def _handle_list_shortcuts(self) -> dict:
+        """List all active shortcuts."""
+        shortcuts = self.session_vars.get("_shortcuts", {})
+        
+        if not shortcuts:
+            return self._build_response({
+                "action": "list_shortcuts",
+                "shortcuts": {},
+                "count": 0,
+                "message": "No shortcuts defined. Create one with: shortcut <alias> <coordinate>"
+            })
+        
+        # Build shortcut info with target details
+        shortcut_info = {}
+        for alias, shortcut in shortcuts.items():
+            if isinstance(shortcut, str):
+                # Legacy format - simple coordinate
+                node = self.nodes.get(shortcut, {})
+                shortcut_info[alias] = {
+                    "shortcut_type": "jump",
+                    "coordinate": shortcut,
+                    "target": node.get("prompt", "Unknown"),
+                    "description": node.get("description", ""),
+                    "type": node.get("type", "Unknown")
+                }
+            elif isinstance(shortcut, dict):
+                shortcut_type = shortcut.get("type", "jump")
+                
+                if shortcut_type == "jump":
+                    coordinate = shortcut["coordinate"]
+                    node = self.nodes.get(coordinate, {})
+                    shortcut_info[alias] = {
+                        "shortcut_type": "jump",
+                        "coordinate": coordinate,
+                        "target": node.get("prompt", "Unknown"),
+                        "description": node.get("description", ""),
+                        "type": node.get("type", "Unknown")
+                    }
+                elif shortcut_type == "chain":
+                    analysis = shortcut.get("analysis", {})
+                    shortcut_info[alias] = {
+                        "shortcut_type": "chain",
+                        "template": shortcut["template"],
+                        "template_type": analysis.get("type", "unconstrained"),
+                        "required_args": analysis.get("entry_args", []),
+                        "target": "Chain Template"
+                    }
+        
+        return self._build_response({
+            "action": "list_shortcuts",
+            "shortcuts": shortcut_info,
+            "count": len(shortcuts),
+            "usage": "Type any alias to jump to its target, or 'shortcut <alias> <coordinate>' to create new ones",
+            "message": f"{len(shortcuts)} shortcuts defined"
+        })
+    
     def _handle_exit(self) -> dict:
         """Exit the shell."""
         return {
@@ -477,3 +877,43 @@ class CommandHandlersMixin:
                 "session_vars": list(self.session_vars.keys())
             }
         }
+    
+    def _handle_set(self, args_str: str) -> dict:
+        """Handle set command for variable assignment."""
+        if not args_str:
+            return {"error": "Usage: set $variable_name to value"}
+        
+        # Parse: set $var_name to value
+        parts = args_str.split(" to ", 1)
+        if len(parts) != 2:
+            return {"error": "Usage: set $variable_name to value"}
+        
+        var_name_part = parts[0].strip()
+        value_part = parts[1].strip()
+        
+        # Extract variable name (remove $ if present)
+        if var_name_part.startswith("$"):
+            var_name = var_name_part[1:]
+        else:
+            var_name = var_name_part
+        
+        if not var_name:
+            return {"error": "Variable name cannot be empty"}
+        
+        # Try to parse value as JSON, fall back to string
+        try:
+            value = json.loads(value_part)
+        except json.JSONDecodeError:
+            value = value_part
+        
+        # Store in session variables
+        self.session_vars[var_name] = value
+        
+        return self._build_response({
+            "action": "set_variable",
+            "variable": var_name,
+            "value": value,
+            "value_type": type(value).__name__,
+            "message": f"Set ${var_name} = {value}"
+        })
+    

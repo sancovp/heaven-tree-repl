@@ -189,7 +189,7 @@ class MetaOperationsMixin:
         if "args_schema" not in node_data:
             node_data["args_schema"] = {}
             
-        # Handle Callable nodes with three different approaches
+        # Handle Callable nodes using shared processing logic
         if node_data["type"] == "Callable":
             function_name = node_data.get("function_name")
             is_async = node_data.get("is_async")
@@ -199,67 +199,10 @@ class MetaOperationsMixin:
             if is_async is None:
                 return {"error": "Callable nodes require 'is_async' field (true/false)"}, False
             
-            # Approach 1: Import from existing module
-            if "import_path" in node_data and "import_object" in node_data:
-                import_path = node_data["import_path"]
-                import_object = node_data["import_object"]
-                
-                try:
-                    # Dynamic import: from import_path import import_object
-                    module = __import__(import_path, fromlist=[import_object])
-                    imported_func = getattr(module, import_object)
-                    
-                    # Register the imported function based on async flag
-                    if is_async:
-                        self.register_async_function(function_name, imported_func)
-                    else:
-                        setattr(self, function_name, imported_func)
-                    
-                    result_detail = f"imported {import_object} from {import_path} ({'async' if is_async else 'sync'})"
-                    
-                except ImportError as e:
-                    return {"error": f"Failed to import {import_object} from {import_path}: {str(e)}"}, False
-                except AttributeError as e:
-                    return {"error": f"Object {import_object} not found in {import_path}: {str(e)}"}, False
-                except Exception as e:
-                    return {"error": f"Import failed: {str(e)}"}, False
-            
-            # Approach 2: Execute function code dynamically
-            elif "function_code" in node_data:
-                function_code = node_data["function_code"]
-                
-                try:
-                    # Create function from code string with enhanced globals
-                    exec_globals = {
-                        "__builtins__": __builtins__,
-                        "self": self,  # Allow access to shell instance
-                    }
-                    exec(function_code, exec_globals)
-                    
-                    # Register the function based on async flag
-                    if function_name in exec_globals:
-                        if is_async:
-                            self.register_async_function(function_name, exec_globals[function_name])
-                        else:
-                            setattr(self, function_name, exec_globals[function_name])
-                        result_detail = f"compiled function code ({'async' if is_async else 'sync'})"
-                    else:
-                        return {"error": f"Function {function_name} not found in provided code"}, False
-                        
-                except Exception as e:
-                    return {"error": f"Failed to compile function code: {str(e)}"}, False
-            
-            # Approach 3: Function name only (assumes function already exists)
-            else:
-                # Check if function already exists
-                if is_async:
-                    if function_name not in self.async_functions:
-                        return {"error": f"Async function {function_name} not found in async registry. Provide 'import_path'+'import_object' or 'function_code'"}, False
-                else:
-                    if not hasattr(self, function_name):
-                        return {"error": f"Function {function_name} not found. Provide either 'import_path'+'import_object' or 'function_code'"}, False
-                
-                result_detail = f"using existing function ({'async' if is_async else 'sync'})"
+            # Use shared callable node processing function
+            result_detail, success = self._process_callable_node(node_data, coordinate)
+            if not success:
+                return {"error": result_detail}, False
         else:
             result_detail = "static node"
         
@@ -522,8 +465,11 @@ class MetaOperationsMixin:
             }, True
             
         except Exception as e:
+            import traceback
             return {
                 "error": f"Failed to list tools: {str(e)}",
+                "exception_type": type(e).__name__,
+                "traceback": traceback.format_exc(),
                 "note": "Make sure HEAVEN framework is available"
             }, False
     
@@ -581,3 +527,285 @@ class MetaOperationsMixin:
                     "Use get_tool_info to see correct parameter format"
                 ]
             }, False
+
+    def _generate_treeshell_tool(self, final_args: dict) -> tuple:
+        """Generate HEAVEN agent tool from TreeShell class."""
+        from .tool_generator import _generate_treeshell_tool
+        return _generate_treeshell_tool(final_args)
+
+    # === Brain Management Operations ===
+    
+    def _brain_setup_system_brains(self, final_args: dict) -> tuple:
+        """Setup default system brains (local HEAVEN data + TreeShell source)."""
+        try:
+            import os
+            import subprocess
+            
+            # Get HEAVEN_DATA_DIR from environment
+            heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR', '/tmp/heaven_data')
+            
+            results = []
+            
+            # 1. Register local HEAVEN data brain (filtered)
+            if os.path.exists(heaven_data_dir):
+                local_result = self._brain_register_local({
+                    "directory_path": heaven_data_dir,
+                    "brain_name": "heaven_local_data"
+                })
+                results.append(("heaven_local_data", local_result[0]))
+            else:
+                results.append(("heaven_local_data", {"error": f"HEAVEN_DATA_DIR not found: {heaven_data_dir}"}))
+            
+            # 2. Clone and register TreeShell source
+            github_url = "https://github.com/heaven-framework/heaven-tree-repl"
+            treeshell_result = self._brain_create_from_github({
+                "github_url": github_url,
+                "brain_name": "treeshell_source"
+            })
+            results.append(("treeshell_source", treeshell_result[0]))
+            
+            return {
+                "setup_complete": True,
+                "results": results,
+                "heaven_data_dir": heaven_data_dir
+            }, True
+            
+        except Exception as e:
+            return {"error": f"Failed to setup system brains: {str(e)}"}, False
+    
+    def _brain_create_from_github(self, final_args: dict) -> tuple:
+        """Clone GitHub repository and register as brain."""
+        github_url = final_args.get("github_url")
+        brain_name = final_args.get("brain_name")
+        
+        if not github_url or not brain_name:
+            return {"error": "Both github_url and brain_name required"}, False
+        
+        try:
+            import os
+            import subprocess
+            import sys
+            
+            # Get HEAVEN_DATA_DIR and create brains subdirectory
+            heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR', '/tmp/heaven_data')
+            brains_dir = os.path.join(heaven_data_dir, 'brains')
+            os.makedirs(brains_dir, exist_ok=True)
+            
+            # Clone repository
+            clone_path = os.path.join(brains_dir, brain_name)
+            if os.path.exists(clone_path):
+                # Update existing clone
+                result = subprocess.run(['git', 'pull'], cwd=clone_path, capture_output=True, text=True)
+                action = "updated"
+            else:
+                # Fresh clone
+                result = subprocess.run(['git', 'clone', github_url, clone_path], capture_output=True, text=True)
+                action = "cloned"
+            
+            if result.returncode != 0:
+                return {"error": f"Git operation failed: {result.stderr}"}, False
+            
+            # Import brain agent functions
+            sys.path.insert(0, '/home/GOD/brain-agent')
+            from brain_agent.brain_agent import register_brain
+            
+            # Register the brain
+            register_brain(clone_path, brain_name)
+            
+            return {
+                "success": True,
+                "action": action,
+                "brain_name": brain_name,
+                "github_url": github_url,
+                "local_path": clone_path
+            }, True
+            
+        except Exception as e:
+            return {"error": f"Failed to create brain from GitHub: {str(e)}"}, False
+    
+    def _brain_register_local(self, final_args: dict) -> tuple:
+        """Register local directory as knowledge brain."""
+        directory_path = final_args.get("directory_path")
+        brain_name = final_args.get("brain_name")
+        
+        if not directory_path or not brain_name:
+            return {"error": "Both directory_path and brain_name required"}, False
+        
+        try:
+            import sys
+            import os
+            
+            if not os.path.exists(directory_path):
+                return {"error": f"Directory does not exist: {directory_path}"}, False
+            
+            # Import brain agent functions
+            sys.path.insert(0, '/home/GOD/brain-agent')
+            from brain_agent.brain_agent import register_brain
+            
+            # Register the brain (with filtering for history.md, history.json, __pycache__, etc.)
+            register_brain(directory_path, brain_name)
+            
+            return {
+                "success": True,
+                "brain_name": brain_name,
+                "directory_path": directory_path,
+                "note": "Brain registered with automatic filtering (excludes history.*, __pycache__, .pyc files)"
+            }, True
+            
+        except Exception as e:
+            return {"error": f"Failed to register local brain: {str(e)}"}, False
+    
+    def _brain_list_all(self, final_args: dict) -> tuple:
+        """Show all registered knowledge brains."""
+        try:
+            import sys
+            
+            # Import registry functions
+            sys.path.insert(0, '/home/GOD/brain-agent')
+            from heaven_base.tools.registry_tool import registry_util_func
+            
+            # List all brains from registry
+            result = registry_util_func(operation="list", registry_name="brain_configs")
+            
+            return {
+                "success": True,
+                "registered_brains": result,
+                "usage": "Use brain_agent_query to query any of these brains"
+            }, True
+            
+        except Exception as e:
+            return {"error": f"Failed to list brains: {str(e)}"}, False
+    
+    def _brain_remove(self, final_args: dict) -> tuple:
+        """Remove brain from registry."""
+        brain_name = final_args.get("brain_name")
+        
+        if not brain_name:
+            return {"error": "brain_name required"}, False
+        
+        try:
+            import sys
+            
+            # Import registry functions
+            sys.path.insert(0, '/home/GOD/brain-agent')
+            from heaven_base.tools.registry_tool import registry_util_func
+            
+            # Remove brain from registry
+            result = registry_util_func(
+                operation="remove",
+                registry_name="brain_configs", 
+                key=brain_name
+            )
+            
+            return {
+                "success": True,
+                "brain_name": brain_name,
+                "result": result
+            }, True
+            
+        except Exception as e:
+            return {"error": f"Failed to remove brain: {str(e)}"}, False
+    
+    # === Brain Agent Query Operations ===
+    
+    async def _brain_agent_fresh_query(self, final_args: dict) -> tuple:
+        """Start new query to a knowledge brain."""
+        brain_name = final_args.get("brain_name")
+        query = final_args.get("query")
+        
+        if not brain_name or not query:
+            return {"error": "Both brain_name and query required"}, False
+        
+        try:
+            import sys
+            
+            # Import brain agent
+            sys.path.insert(0, '/home/GOD/brain-agent')
+            from brain_agent.brain_agent import BrainAgent
+            
+            # Create brain agent instance
+            brain_agent = BrainAgent()
+            
+            # Query the brain
+            instructions = await brain_agent.query(f"TargetBrain: {brain_name}\nQuery: {query}")
+            
+            # Store conversation in session for deepening
+            if "brain_conversations" not in self.session_vars:
+                self.session_vars["brain_conversations"] = {}
+            
+            self.session_vars["brain_conversations"][brain_name] = {
+                "last_query": query,
+                "last_answer": instructions,
+                "history": [(query, instructions)]
+            }
+            
+            return {
+                "success": True,
+                "brain_name": brain_name,
+                "query": query,
+                "instructions": instructions,
+                "note": "Use deepen_query to get more detailed understanding"
+            }, True
+            
+        except Exception as e:
+            return {"error": f"Failed to query brain: {str(e)}"}, False
+    
+    async def _brain_agent_deepen_query(self, final_args: dict) -> tuple:
+        """Deepen previous query for more detailed understanding using templated prompt."""
+        previous_answer = final_args.get("previous_answer")
+        original_query = final_args.get("original_query")
+        brain_name = final_args.get("brain_name")
+        
+        if not previous_answer or not original_query or not brain_name:
+            return {"error": "brain_name, previous_answer, and original_query all required"}, False
+        
+        # Template for deepening query - leverages domain jargon to activate more neurons
+        deepening_template = """I know that {previous_answer} explains {original_query}, but I want to understand more deeply from here. 
+
+Based on the terminology and concepts in that previous answer, what additional details, patterns, or advanced aspects should I know? Use the specific vocabulary and jargon from the previous answer to dig deeper into related neurons and knowledge areas."""
+        
+        # Format the deepening query with the template
+        deepening_query = deepening_template.format(
+            previous_answer=previous_answer[:300],  # Limit length but include key terms
+            original_query=original_query
+        )
+        
+        # Execute zero-shot fresh query with templated deepening prompt
+        return await self._brain_agent_fresh_query({
+            "brain_name": brain_name,
+            "query": deepening_query
+        })
+    
+    async def _brain_agent_continue(self, final_args: dict) -> tuple:
+        """Continue brain agent conversation with follow-up."""
+        brain_name = final_args.get("brain_name")
+        follow_up = final_args.get("follow_up")
+        
+        if not brain_name or not follow_up:
+            return {"error": "Both brain_name and follow_up required"}, False
+        
+        return await self._brain_agent_fresh_query({
+            "brain_name": brain_name,
+            "query": follow_up
+        })
+    
+    def _brain_agent_show_history(self, final_args: dict) -> tuple:
+        """Display brain agent conversation history."""
+        if "brain_conversations" not in self.session_vars:
+            return {"no_history": True, "message": "No brain conversations yet"}, True
+        
+        conversations = self.session_vars["brain_conversations"]
+        
+        formatted_history = {}
+        for brain_name, conv_data in conversations.items():
+            formatted_history[brain_name] = {
+                "last_query": conv_data["last_query"],
+                "total_exchanges": len(conv_data["history"]),
+                "history": conv_data["history"]
+            }
+        
+        return {
+            "success": True,
+            "brain_conversations": formatted_history,
+            "total_brains_queried": len(conversations)
+        }, True

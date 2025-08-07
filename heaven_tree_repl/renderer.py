@@ -23,21 +23,13 @@ def render_response(response: Dict[str, Any]) -> str:
     domain = response.get("domain", "general")
     role = response.get("role", "assistant")
     
-    # Create display brief for main menu
-    display_brief = None
-    if position == "0":
-        display_brief = DisplayBrief(role=role)
-    
     # Start with crystal ball tree header and position info
     base_header = f"<<[🔮‍🌳]>> You are now visiting position `{position}` in the {app_id} tree space for the domain: {domain}."
     
     # Build header with help message for main menu
     help_msg = " | 💡 New here? Use `jump 0.2.6` for Computational Model overview" if position == "0" else ""
     
-    if display_brief and display_brief.has_content():
-        header = f"{base_header} {display_brief.to_display_string()}{help_msg}"
-    else:
-        header = f"{base_header}{help_msg}"
+    header = f"{base_header}{help_msg}"
     
     # Handle different response types
     action = response.get("action", "menu")
@@ -70,6 +62,18 @@ def render_response(response: Dict[str, Any]) -> str:
         # Chain execution
         content = _render_chain(response)
         
+    elif action == "navigation_overview":
+        # Navigation overview (nav command)
+        content = _render_navigation_overview(response)
+        
+    elif action == "create_shortcut":
+        # Shortcut creation
+        content = _render_create_shortcut(response)
+        
+    elif action == "list_shortcuts":
+        # List shortcuts
+        content = _render_list_shortcuts(response)
+        
     elif "error" in response:
         # Error display
         content = _render_error(response)
@@ -101,7 +105,7 @@ def _render_menu(response: Dict[str, Any]) -> str:
     # Build description section
     desc_section = f"Description: {description}"
     if signature and signature != "No signature available":
-        desc_section += f"\nArgs: {signature}"
+        desc_section += f"\n\nArgs: {signature}"
     
     return f"""# {node_id} Menu
 
@@ -220,6 +224,127 @@ def _render_chain(response: Dict[str, Any]) -> str:
     final_position = response.get("final_position")
     if final_position:
         parts.append(f"*Now at: {final_position}*")
+    
+    return "\n".join(parts)
+
+
+def _render_navigation_overview(response: Dict[str, Any]) -> str:
+    """Render navigation overview (nav command)."""
+    parts = []
+    
+    # Title with emoji
+    parts.append("# 🗺️ Navigation Overview")
+    
+    # Tree structure (the main content)
+    tree_structure = response.get("tree_structure", "")
+    if tree_structure:
+        parts.append("```")
+        parts.append(tree_structure)
+        parts.append("```")
+    
+    # Summary stats
+    summary = response.get("summary", {})
+    if summary:
+        parts.append("## 📊 Forest Summary")
+        parts.append(f"- **Total nodes:** {summary.get('total_nodes', 0)}")
+        parts.append(f"- **Crystal hubs:** {summary.get('menu_nodes', 0)} (menus)")
+        parts.append(f"- **Active gears:** {summary.get('callable_nodes', 0)} (executables)")
+        parts.append(f"- **Max depth:** {summary.get('max_depth', 0)} levels")
+        parts.append(f"- **Current position:** {summary.get('current_position', '0')}")
+    
+    # Usage hint
+    usage = response.get("usage", "")
+    if usage:
+        parts.append(f"## 💡 Usage")
+        parts.append(f"*{usage}*")
+    
+    # DSL legend
+    parts.append("## 🎯 Ontological Emoji DSL")
+    parts.append("- **🔮** = Root crystal")
+    parts.append("- **🧠** = Brain/AI domain") 
+    parts.append("- **📜** = Documentation domain")
+    parts.append("- **🚀** = Generation/creation domain")
+    parts.append("- **🛠️** = Tools/utilities domain")
+    parts.append("- **🌀** = Meta/system operations domain")
+    parts.append("- **🤖** = Agent systems domain")
+    parts.append("- **🗺️** = General navigation hub")
+    parts.append("- **⚙️** = Executable function (universal)")
+    
+    return "\n".join(parts)
+
+
+def _render_create_shortcut(response: Dict[str, Any]) -> str:
+    """Render shortcut creation response."""
+    parts = []
+    
+    # Title
+    parts.append("# 🔗 Shortcut Created")
+    
+    # Shortcut info
+    alias = response.get("alias", "unknown")
+    coordinate = response.get("coordinate", "unknown") 
+    target = response.get("target", "unknown")
+    
+    parts.append(f"**Alias:** `{alias}`")
+    parts.append(f"**Target:** `{coordinate}` ({target})")
+    
+    # Usage
+    usage = response.get("usage", "")
+    if usage:
+        parts.append(f"## 💡 Usage")
+        parts.append(f"*{usage}*")
+    
+    return "\n".join(parts)
+
+
+def _render_list_shortcuts(response: Dict[str, Any]) -> str:
+    """Render shortcuts list."""
+    parts = []
+    
+    # Title
+    count = response.get("count", 0)
+    parts.append(f"# 🔗 Active Shortcuts ({count})")
+    
+    shortcuts = response.get("shortcuts", {})
+    if shortcuts:
+        # Separate jump and chain shortcuts
+        jump_shortcuts = {k: v for k, v in shortcuts.items() if v.get("shortcut_type") == "jump"}
+        chain_shortcuts = {k: v for k, v in shortcuts.items() if v.get("shortcut_type") == "chain"}
+        
+        if jump_shortcuts:
+            parts.append("## 🎯 Jump Shortcuts")
+            parts.append("```")
+            for alias, info in jump_shortcuts.items():
+                coordinate = info.get("coordinate", "")
+                target = info.get("target", "Unknown")
+                parts.append(f"{alias:<15} → {coordinate:<8} ({target})")
+            parts.append("```")
+        
+        if chain_shortcuts:
+            parts.append("## ⛓️ Chain Shortcuts")
+            parts.append("```")
+            for alias, info in chain_shortcuts.items():
+                template_type = info.get("template_type", "unconstrained")
+                required_args = info.get("required_args", [])
+                args_str = f"requires: {', '.join(required_args)}" if required_args else "no args needed"
+                parts.append(f"{alias:<15} → Chain ({template_type}) - {args_str}")
+            parts.append("```")
+        
+        # Usage hint
+        usage = response.get("usage", "")
+        if usage:
+            parts.append(f"## 💡 Usage")
+            parts.append(f"*{usage}*")
+            
+        # Show examples
+        parts.append("## 📝 Examples")
+        parts.append("- Jump: `brain` → navigate to Brain Management")
+        parts.append("- Chain: `workflow {\"param\": \"value\"}` → execute with args")
+        
+    else:
+        parts.append("*No shortcuts defined yet.*")
+        parts.append("**Jump shortcuts:** `shortcut <alias> <coordinate>`")
+        parts.append("**Chain shortcuts:** `shortcut <alias> \"<chain_template>\"`")
     
     return "\n".join(parts)
 
