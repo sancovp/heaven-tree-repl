@@ -58,8 +58,8 @@ def get_example_config():
     }
 
 
-def main():
-    """Main CLI entry point."""
+async def main_async():
+    """Async main CLI entry point."""
     print("🔮🌳 HEAVEN Tree REPL Demo")
     print("=" * 40)
     
@@ -75,7 +75,7 @@ def main():
     shell._echo_test = _echo_test
     
     # Show initial menu
-    response = shell.handle_command("")
+    response = await shell.handle_command("")
     print(render_response(response))
     
     # Interactive loop
@@ -85,7 +85,7 @@ def main():
             if command.lower() in ['exit', 'quit']:
                 break
             
-            response = shell.handle_command(command)
+            response = await shell.handle_command(command)
             print(render_response(response))
             
     except KeyboardInterrupt:
@@ -93,6 +93,12 @@ def main():
     except Exception as e:
         print(f"\nError: {e}")
         sys.exit(1)
+
+
+def main():
+    """Main CLI entry point."""
+    import asyncio
+    asyncio.run(main_async())
 
 
 if __name__ == "__main__":

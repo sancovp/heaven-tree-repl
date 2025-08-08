@@ -492,8 +492,25 @@ class TreeShellBase:
         
         # Extract signature with fallback
         try:
-            signature = str(inspect.signature(function))
-            signature = f"{function_name}{signature}"
+            sig = inspect.signature(function)
+            signature_str = str(sig)
+            
+            # Check if we have args_schema with pre-filled values (starting with $)
+            if node and "args_schema" in node:
+                args_schema = node["args_schema"]
+                prefilled_params = {k: v for k, v in args_schema.items() if isinstance(v, str) and v.startswith('$')}
+                
+                if prefilled_params:
+                    # Parse and modify the signature to show SYSTEM_WILL_PREFILL
+                    import re
+                    
+                    for param_name in prefilled_params:
+                        # Replace parameter with SYSTEM_WILL_PREFILL marker
+                        pattern = rf'\b{param_name}(?:\s*:\s*[^,)]+)?(?:\s*=\s*[^,)]+)?'
+                        replacement = f'{param_name}=SYSTEM_WILL_PREFILL'
+                        signature_str = re.sub(pattern, replacement, signature_str)
+            
+            signature = f"{function_name}{signature_str}"
         except Exception:
             signature = f"⚠️ Could not extract signature for {function_name}"
         
@@ -547,8 +564,11 @@ class TreeShellBase:
             "exit"
         ]
         
-        # Get description and signature
-        description = node.get("description", "No description available")
+        # Get description and signature with HEAVEN resolution
+        raw_description = node.get("description", "No description available")
+        # Import here to avoid circular imports
+        from .renderer import resolve_description
+        description = resolve_description(raw_description)
         signature = "No signature available"
         
         # For callable nodes, try to extract function documentation

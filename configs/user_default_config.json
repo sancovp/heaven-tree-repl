@@ -551,26 +551,30 @@
     "0.4.1": {
       "type": "Callable",
       "prompt": "Start New Chat",
-      "description": "Start a new conversation with a title and first message",
-      "signature": "start_chat(title: str, message: str, tags: str) -> conversation_result",
+      "description": "Start a new conversation using the currently selected agent config",
+      "signature": "_start_chat(title: str, message: str, tags: str)",
       "import_path": "heaven_tree_repl.conversation_chat_app",
       "import_object": "_start_chat",
       "function_name": "_start_chat",
       "is_async": true,
       "args_schema": {
+        "title": "str",
+        "message": "str", 
+        "tags": "str",
         "agent_config": "$selected_agent_config"
       }
     },
     "0.4.2": {
       "type": "Callable",
       "prompt": "Continue Chat",
-      "description": "Continue the current active conversation",
-      "signature": "continue_chat(message: str) -> chat_response",
+      "description": "Continue the current active conversation with the selected agent",
+      "signature": "_continue_chat(message: str)",
       "import_path": "heaven_tree_repl.conversation_chat_app",
       "import_object": "_continue_chat",
       "function_name": "_continue_chat",
       "is_async": true,
       "args_schema": {
+        "message": "str",
         "agent_config": "$selected_agent_config"
       }
     },

@@ -3,8 +3,29 @@
 Renderer module - Format TreeShell responses as crystal ball markdown.
 """
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Union, List
 from .display_brief import DisplayBrief
+
+def resolve_description(description: Union[str, List[str]]) -> str:
+    """Resolve description as string or HEAVEN blocks array."""
+    if isinstance(description, str):
+        return description  # Static string, return as-is
+    elif isinstance(description, list):
+        try:
+            # Resolve as HEAVEN prompt suffix blocks
+            from heaven_base import HeavenAgentConfig
+            temp_config = HeavenAgentConfig(
+                name="temp",
+                system_prompt="",  # Empty base
+                prompt_suffix_blocks=description
+            )
+            resolved = temp_config.get_system_prompt()
+            return resolved.strip()  # Remove any leading/trailing whitespace
+        except Exception as e:
+            # Fallback to simple concatenation if HEAVEN resolution fails
+            return '\n'.join(str(block) for block in description)
+    else:
+        return str(description)  # Fallback for other types
 
 
 def render_response(response: Dict[str, Any]) -> str:
@@ -90,8 +111,9 @@ def _render_menu(response: Dict[str, Any]) -> str:
     # Node ID and Menu title
     node_id = response.get("position", "Unknown")
     
-    # Menu description
-    description = response.get("description", "No description available")
+    # Menu description with HEAVEN resolution
+    raw_description = response.get("description", "No description available")
+    description = resolve_description(raw_description)
     signature = response.get("signature", "")
     
     # Menu options
@@ -106,8 +128,15 @@ def _render_menu(response: Dict[str, Any]) -> str:
     desc_section = f"Description: {description}"
     if signature and signature != "No signature available":
         desc_section += f"\n\nArgs: {signature}"
+        
+        # Add warning if system prefill is present
+        if "SYSTEM_WILL_PREFILL" in signature:
+            desc_section += f"\n\n⚠️ If param=SYSTEM_WILL_PREFILL, it can be ignored because the system will prefill it.\nIf signature shows (x, y=SYSTEM_WILL_PREFILL), call it with args={{\"x\": ...}}"
     
-    return f"""# {node_id} Menu
+    # Get node name (prompt) or fallback to position
+    node_name = response.get("prompt", response.get("position", "Unknown"))
+    
+    return f"""# {node_name} Menu
 
 {desc_section}
 

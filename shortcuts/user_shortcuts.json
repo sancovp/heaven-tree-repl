@@ -1,1 +1,6 @@
-{}
+{
+  "victory_chain": {
+    "type": "jump",
+    "coordinate": "0.0.2.1"
+  }
+}
