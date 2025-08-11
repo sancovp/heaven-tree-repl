@@ -1,22 +1,22 @@
 {
   "family_root": "system_brain_management",
-  "domain": "system_brain_management", 
+  "domain": "system_brain_management",
   "description": "Create and manage knowledge brains",
   "nodes": {
     "system_brain_management": {
       "type": "Menu",
-      "prompt": "🧠 Brain Management",
+      "prompt": "\ud83e\udde0 Brain Management",
       "description": "Create and manage knowledge brains",
       "signature": "brain_management() -> brain_options"
     },
-    "system_brain_management.1": {
+    "action_one": {
       "type": "Callable",
       "prompt": "Setup System Brains",
       "description": "Auto-register core knowledge bases (Local HEAVEN data + TreeShell source)",
       "signature": "setup_system_brains() -> dict",
       "function_name": "_brain_setup_system_brains"
     },
-    "system_brain_management.2": {
+    "action_two": {
       "type": "Callable",
       "prompt": "Create Brain from GitHub",
       "description": "Clone GitHub repository and register as brain",
@@ -27,7 +27,7 @@
         "brain_name": "str"
       }
     },
-    "system_brain_management.3": {
+    "action_three": {
       "type": "Callable",
       "prompt": "Register Local Directory",
       "description": "Register local directory as knowledge brain",
@@ -38,14 +38,14 @@
         "brain_name": "str"
       }
     },
-    "system_brain_management.4": {
+    "action_four": {
       "type": "Callable",
       "prompt": "List All Brains",
       "description": "Show all registered knowledge brains",
       "signature": "list_brains() -> dict",
       "function_name": "_brain_list_all"
     },
-    "system_brain_management.5": {
+    "action_five": {
       "type": "Callable",
       "prompt": "Remove Brain",
       "description": "Remove brain from registry",

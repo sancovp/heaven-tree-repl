@@ -5,11 +5,11 @@
   "nodes": {
     "system_mcp_generator": {
       "type": "Menu",
-      "prompt": "🚀 MCP Server Generator",
+      "prompt": "\ud83d\ude80 MCP Server Generator",
       "description": "Generate MCP servers from TreeShell applications",
       "signature": "mcp_generator() -> generation_options"
     },
-    "system_mcp_generator.1": {
+    "action_one": {
       "type": "Callable",
       "prompt": "Initialize MCP Config",
       "description": "Create new MCP server configuration",
@@ -22,30 +22,34 @@
         "description": "str"
       }
     },
-    "system_mcp_generator.2": {
+    "action_two": {
       "type": "Callable",
       "prompt": "Show MCP Config",
       "description": "Display current MCP server configuration",
       "signature": "show_mcp_config() -> dict",
       "function_name": "_meta_show_mcp_config"
     },
-    "system_mcp_generator.3": {
+    "action_three": {
       "type": "Callable",
       "prompt": "Update MCP Config",
       "description": "Modify MCP server configuration settings",
       "signature": "update_mcp_config(updates: dict) -> dict",
       "function_name": "_meta_update_mcp_config",
-      "args_schema": {"updates": "dict"}
+      "args_schema": {
+        "updates": "dict"
+      }
     },
-    "system_mcp_generator.4": {
+    "action_four": {
       "type": "Callable",
       "prompt": "Generate MCP Server",
       "description": "Create complete MCP server package",
       "signature": "generate_mcp_server(output_dir: str) -> dict",
       "function_name": "_meta_generate_mcp_server",
-      "args_schema": {"output_dir": "str"}
+      "args_schema": {
+        "output_dir": "str"
+      }
     },
-    "system_mcp_generator.5": {
+    "action_five": {
       "type": "Callable",
       "prompt": "Get Example Config",
       "description": "Show example MCP configuration format",

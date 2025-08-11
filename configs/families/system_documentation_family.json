@@ -5,78 +5,78 @@
   "nodes": {
     "system_documentation": {
       "type": "Menu",
-      "prompt": "📚 Documentation",
+      "prompt": "\ud83d\udcda Documentation",
       "description": "TreeShell documentation and command reference. To read a section, use the number + {} (e.g., '2 {}' to read Execution Syntax). Each section contains detailed guides and examples.",
       "signature": "docs() -> documentation_options"
     },
-    "system_documentation.1": {
+    "action_one": {
       "type": "Callable",
       "prompt": "Execution Syntax",
       "description": "How to execute nodes with different argument patterns",
       "signature": "execution_syntax() -> syntax_guide",
       "function_name": "_docs_execution_syntax"
     },
-    "system_documentation.2": {
+    "action_two": {
       "type": "Callable",
       "prompt": "Callable Nodes",
       "description": "How to create and use callable nodes with 3 implementation approaches",
       "signature": "callable_nodes() -> callable_guide",
       "function_name": "_docs_callable_nodes"
     },
-    "system_documentation.3": {
+    "action_three": {
       "type": "Callable",
       "prompt": "Navigation Commands",
       "description": "Jump, chain, pathways, and other navigation commands",
       "signature": "navigation() -> navigation_guide",
       "function_name": "_docs_navigation"
     },
-    "system_documentation.4": {
+    "action_four": {
       "type": "Callable",
       "prompt": "Pathway System",
       "description": "Recording, saving, and executing pathway templates",
       "signature": "pathways() -> pathway_guide",
       "function_name": "_docs_pathways"
     },
-    "system_documentation.5": {
+    "action_five": {
       "type": "Callable",
       "prompt": "Meta Operations",
       "description": "Session management, variables, and tree structure operations",
       "signature": "meta_operations() -> meta_guide",
       "function_name": "_docs_meta_operations"
     },
-    "system_documentation.6": {
+    "action_6": {
       "type": "Callable",
       "prompt": "Computational Model",
       "description": "How TreeShell achieves Turing completeness through self-modification and agent delegation",
       "signature": "computational_model() -> computational_guide",
       "function_name": "_docs_computational_model"
     },
-    "system_documentation.7": {
+    "action_7": {
       "type": "Callable",
       "prompt": "Shortcuts System",
       "description": "Create semantic aliases for navigation and chain templates with persistent storage",
       "signature": "shortcuts() -> shortcuts_guide",
       "function_name": "_docs_shortcuts"
     },
-    "system_documentation.8": {
+    "action_8": {
       "type": "Callable",
       "prompt": "Function Signatures & Auto-Documentation",
       "description": "How TreeShell automatically extracts and displays function signatures and docstrings",
       "signature": "function_signatures() -> signature_guide",
       "function_name": "_docs_function_signatures"
     },
-    "system_documentation.9": {
+    "action_9": {
       "type": "Callable",
-      "prompt": "Templating System & Variable Injection", 
+      "prompt": "Templating System & Variable Injection",
       "description": "Complete guide to args_schema templating: $variables and {$variable} string formatting",
       "signature": "templating_system() -> templating_guide",
       "function_name": "_docs_templating_system"
     },
-    "system_documentation.10": {
+    "action_10": {
       "type": "Callable",
       "prompt": "Import Resolution System",
       "description": "How TreeShell resolves and imports functions: import_path, import_object, and function_code",
-      "signature": "import_resolution() -> import_guide", 
+      "signature": "import_resolution() -> import_guide",
       "function_name": "_docs_import_resolution"
     }
   }

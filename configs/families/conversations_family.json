@@ -1,15 +1,15 @@
 {
   "family_root": "conversations",
-  "domain": "conversations", 
+  "domain": "conversations",
   "description": "Chat and conversation management system",
   "nodes": {
     "conversations": {
       "id": "conversations",
-      "title": "💬 Conversation Management",
+      "title": "\ud83d\udcac Conversation Management",
       "description": "Default conversation system for all TreeShell applications",
       "legacy_coordinate": "0.4"
     },
-    "conversations.start": {
+    "start": {
       "id": "conversations.start",
       "title": "Start New Chat",
       "description": "Start a new conversation using the currently selected agent config",
@@ -21,13 +21,13 @@
         "is_async": true,
         "args_schema": {
           "title": "str",
-          "message": "str", 
+          "message": "str",
           "tags": "str",
           "agent_config": "$selected_agent_config"
         }
       }
     },
-    "conversations.continue": {
+    "continue": {
       "id": "conversations.continue",
       "title": "Continue Chat",
       "description": "Continue the current active conversation with the selected agent",
@@ -43,7 +43,7 @@
         }
       }
     },
-    "conversations.list": {
+    "list": {
       "id": "conversations.list",
       "title": "List Conversations",
       "description": "Show recent conversations",
@@ -57,7 +57,7 @@
         }
       }
     },
-    "conversations.load": {
+    "load": {
       "id": "conversations.load",
       "title": "Load Conversation",
       "description": "Switch to an existing conversation",
@@ -71,7 +71,7 @@
         }
       }
     },
-    "conversations.search": {
+    "search": {
       "id": "conversations.search",
       "title": "Search Conversations",
       "description": "Search conversations by title or tags",
@@ -85,13 +85,13 @@
         }
       }
     },
-    "conversations.management": {
+    "management": {
       "id": "conversations.management",
-      "title": "📋 Management Tools",
+      "title": "\ud83d\udccb Management Tools",
       "description": "Advanced conversation management features",
       "legacy_coordinate": "0.2.1"
     },
-    "conversations.management.archive": {
+    "archive": {
       "id": "conversations.management.archive",
       "title": "Archive Conversations",
       "description": "Archive old conversations",
@@ -105,7 +105,7 @@
         }
       }
     },
-    "conversations.management.export": {
+    "export": {
       "id": "conversations.management.export",
       "title": "Export Conversations",
       "description": "Export conversations to various formats",
@@ -120,13 +120,13 @@
         }
       }
     },
-    "conversations.analytics": {
+    "analytics": {
       "id": "conversations.analytics",
-      "title": "📊 Analytics",
+      "title": "\ud83d\udcca Analytics",
       "description": "Conversation analytics and insights",
       "legacy_coordinate": "0.2.2"
     },
-    "conversations.analytics.stats": {
+    "stats": {
       "id": "conversations.analytics.stats",
       "title": "Conversation Stats",
       "description": "Show conversation usage statistics",
@@ -137,7 +137,7 @@
         "import_object": "conversation_stats"
       }
     },
-    "conversations.analytics.patterns": {
+    "patterns": {
       "id": "conversations.analytics.patterns",
       "title": "Usage Patterns",
       "description": "Analyze conversation usage patterns",

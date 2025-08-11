@@ -5,11 +5,11 @@
   "nodes": {
     "system_langgraph": {
       "type": "Menu",
-      "prompt": "🧩 HEAVEN LangGraph Legos",
+      "prompt": "\ud83e\udde9 HEAVEN LangGraph Legos",
       "description": "LangGraph node execution and workflow construction",
       "signature": "langgraph_legos() -> langgraph_options"
     },
-    "system_langgraph.1": {
+    "action_one": {
       "type": "Callable",
       "prompt": "Execute Graph",
       "description": "Execute a LangGraph workflow",
@@ -23,7 +23,7 @@
         "parameters": "dict"
       }
     },
-    "system_langgraph.2": {
+    "action_two": {
       "type": "Callable",
       "prompt": "Graph Constructor",
       "description": "Build LangGraph workflows visually (future feature)",
@@ -32,7 +32,7 @@
       "import_path": "langgraph_functions",
       "import_object": "graph_constructor"
     },
-    "system_langgraph.3": {
+    "action_three": {
       "type": "Callable",
       "prompt": "List Node Legos",
       "description": "Show available LangGraph node types",
@@ -41,7 +41,7 @@
       "import_path": "langgraph_functions",
       "import_object": "list_node_legos"
     },
-    "system_langgraph.4": {
+    "action_four": {
       "type": "Callable",
       "prompt": "List Graph Templates",
       "description": "Show available workflow templates (future feature)",

@@ -54,6 +54,9 @@ class TreeShellBase:
         # Build nodes (may need to import functions)
         self.nodes = self._build_coordinate_nodes(graph_config)
         
+        # Build clean numeric-only map for nav display
+        self.numeric_nodes = self._build_numeric_map()
+        
         # Navigation state
         self.current_position = "0"
         self.stack = ["0"]
@@ -191,8 +194,8 @@ class TreeShellBase:
         return families
     
     def _convert_family_to_coordinates(self, family_config: dict, family_name: str, all_families: dict = None) -> dict:
-        """Convert family nodes to coordinate-based addressing."""
-        nodes = {}
+        """Build address lookup for family nodes without duplicating data."""
+        address_lookup = {}
         family_nodes = family_config.get("nodes", {})
         
         # Get the nav coordinate for this family, with automatic rollup for sub-families
@@ -204,86 +207,138 @@ class TreeShellBase:
                 if family_name.startswith(f"{base_family}_"):
                     nav_coord = base_coord
                     has_nav_coord = True
-                    # print(f"Debug: Rolling up '{family_name}' into '{base_family}' -> '{base_coord}'")
                     break
             
             if not nav_coord:
-                # Family exists in semantic space only, not nav coordinate space
-                # Use family name as semantic coordinate base
+                # Family exists in semantic space only
                 nav_coord = family_name
-                # print(f"Debug: Family '{family_name}' using semantic coordinates")
-        else:
-            # print(f"Debug: Family '{family_name}' using nav coordinate '{nav_coord}' + semantic coordinates")
-            pass
         
-        # No copying needed - just load each family into its own semantic space
-        # The semantic resolver will handle family references like "system_pathways"
-
+        # Process each node once and create address mappings
         for node_id, node_data in family_nodes.items():
-            # Convert family addressing to coordinate addressing
-            if node_id == family_name:
-                # Root family node maps to nav coordinate
-                coordinate = nav_coord
-            else:
-                # Convert family.node.subnode to nav_coord.node.subnode
-                if node_id.startswith(f"{family_name}."):
-                    relative_path = node_id[len(family_name) + 1:]  # Remove "family_name."
-                    coordinate = f"{nav_coord}.{relative_path}"
-                else:
-                    # Fallback for any other format
-                    coordinate = f"{nav_coord}.{node_id}"
-            
-            # Start with ALL original node data to preserve everything
-            coord_node = node_data.copy()
+            # Process the node data once - modify in place to avoid copies
+            processed_node = node_data
             
             # Override prompt if title exists, otherwise ensure prompt exists
             if "title" in node_data:
-                coord_node["prompt"] = node_data["title"]
-            elif "prompt" not in coord_node:
-                coord_node["prompt"] = f"Node {coordinate}"
+                processed_node["prompt"] = node_data["title"]
+            elif "prompt" not in processed_node:
+                processed_node["prompt"] = f"Node {node_id}"
             
             # Ensure options exist for auto-generation
-            if "options" not in coord_node:
-                coord_node["options"] = {}
+            if "options" not in processed_node:
+                processed_node["options"] = {}
             
-            # Handle nested callable structure if it exists (legacy support)
+            # Handle nested callable structure if it exists
             if "callable" in node_data:
                 callable_info = node_data["callable"]
-                coord_node.update({
+                processed_node.update({
                     "function_name": callable_info.get("function_name"),
                     "import_path": callable_info.get("import_path"),
                     "import_object": callable_info.get("import_object"),
                     "is_async": callable_info.get("is_async", False),
                     "args_schema": callable_info.get("args_schema", {})
                 })
-                # Remove the nested callable structure since we've flattened it
-                del coord_node["callable"]
+                del processed_node["callable"]
             
-            nodes[coordinate] = coord_node
+            # Create address mappings - all point to the same node object
+            # 1. Primary semantic address (from JSON)
+            address_lookup[node_id] = processed_node
             
-            # ALSO create legacy coordinate mapping if specified
+            # 2. Legacy coordinate if specified
             if "legacy_coordinate" in node_data:
-                legacy_coord = node_data["legacy_coordinate"]
-                nodes[legacy_coord] = coord_node.copy()
+                address_lookup[node_data["legacy_coordinate"]] = processed_node
             
-            # For nav families, ALSO create semantic coordinate versions
-            if has_nav_coord and node_id == family_name:
-                # Create semantic version: family_name -> family_name (not nav_coord)
-                semantic_coordinate = family_name
-                semantic_node = coord_node.copy()  # Copy the node
-                nodes[semantic_coordinate] = semantic_node
-                # print(f"Debug: Created semantic duplicate '{semantic_coordinate}' for nav family '{family_name}'")
-            elif has_nav_coord:
-                # Create semantic versions of sub-nodes too
-                if node_id.startswith(f"{family_name}."):
-                    relative_path = node_id[len(family_name) + 1:]  # Remove "family_name."
-                    semantic_coordinate = f"{family_name}.{relative_path}"
+            # 3. Nav coordinate for nav families only
+            if has_nav_coord:
+                if node_id == family_name:
+                    # Root family node maps to nav coordinate
+                    nav_address = nav_coord
                 else:
-                    semantic_coordinate = f"{family_name}.{node_id}"
-                semantic_node = coord_node.copy()  # Copy the node
-                nodes[semantic_coordinate] = semantic_node
+                    # Sub-nodes get nav coordinate path
+                    if node_id.startswith(f"{family_name}."):
+                        relative_path = node_id[len(family_name) + 1:]
+                        nav_address = f"{nav_coord}.{relative_path}"
+                    else:
+                        nav_address = f"{nav_coord}.{node_id}"
+                
+                address_lookup[nav_address] = processed_node
         
-        return nodes
+        return address_lookup
+    
+    def _build_numeric_map(self) -> dict:
+        """Build clean numeric-only node map for nav display.
+        
+        Families are siblings at NAV-1 level, then cascade internally:
+        - system family: 0.0.0, 0.0.0.0, 0.0.0.0.0, ...
+        - system_omnitool family: 0.0.1, 0.0.1.0, 0.0.1.0.0, ...  
+        - system_meta family: 0.0.2, 0.0.2.0, 0.0.2.0.0, ...
+        """
+        numeric_nodes = {}
+        
+        # Load all family configurations
+        families = self._load_family_configs()
+        
+        # Group families by their nav coordinate
+        nav_groups = {}
+        for family_name, family_config in families.items():
+            # Get nav coordinate for this family
+            nav_coord = self.family_mappings.get(family_name)
+            if not nav_coord:
+                # Check for sub-family rollup
+                for base_family, base_coord in self.family_mappings.items():
+                    if family_name.startswith(f"{base_family}_"):
+                        nav_coord = base_coord
+                        break
+                if not nav_coord:
+                    continue  # Skip families without nav coordinates
+            
+            if nav_coord not in nav_groups:
+                nav_groups[nav_coord] = []
+            nav_groups[nav_coord].append((family_name, family_config))
+        
+        # Process each nav group
+        for nav_coord, family_list in nav_groups.items():
+            # Assign sibling coordinates at NAV-1 level (0.0.0, 0.0.1, 0.0.2, ...)
+            for sibling_index, (family_name, family_config) in enumerate(family_list):
+                family_nodes = family_config.get("nodes", {})
+                node_names = list(family_nodes.keys())
+                
+                # Family gets NAV-1 coordinate: nav_coord.sibling_index
+                family_base_coord = f"{nav_coord}.{sibling_index}"
+                
+                # Assign cascading coordinates within this family
+                for i, node_id in enumerate(node_names):
+                    node_data = family_nodes[node_id]
+                    
+                    if i == 0:
+                        # First node gets the family base coordinate
+                        numeric_coord = family_base_coord
+                    else:
+                        # Subsequent nodes cascade with .0
+                        numeric_coord = family_base_coord + ".0" * i
+                    
+                    # Process node data
+                    processed_node = node_data.copy()
+                    if "title" in node_data:
+                        processed_node["prompt"] = node_data["title"]
+                    if "options" not in processed_node:
+                        processed_node["options"] = {}
+                    
+                    # Handle callable structure
+                    if "callable" in node_data:
+                        callable_info = node_data["callable"]
+                        processed_node.update({
+                            "function_name": callable_info.get("function_name"),
+                            "import_path": callable_info.get("import_path"),
+                            "import_object": callable_info.get("import_object"),
+                            "is_async": callable_info.get("is_async", False),
+                            "args_schema": callable_info.get("args_schema", {})
+                        })
+                        del processed_node["callable"]
+                    
+                    numeric_nodes[numeric_coord] = processed_node
+        
+        return numeric_nodes
 
     def _load_shortcuts(self) -> None:
         """Load shortcuts from JSON files. Override in subclasses for different layers."""
@@ -928,17 +983,125 @@ class TreeShellBase:
         except Exception:
             signature = f"⚠️ Could not extract signature for {function_name}"
         
-        # Extract docstring with fallback
+        # Extract docstring with HEAVEN tool schema fallback chain
+        docstring = None
+        
+        # 1. Try HEAVEN tool generation for rich schema through agent initialization
         try:
-            docstring = function.__doc__
-            if not docstring or not docstring.strip():
-                docstring = "⚠️ No docstring available"
-            else:
-                docstring = docstring.strip()
+            from heaven_base.make_heaven_tool_from_docstring import make_heaven_tool_from_docstring
+            from heaven_base.baseheavenagent import BaseHeavenAgent, HeavenAgentConfig
+            from heaven_base.unified_chat import UnifiedChat, ProviderEnum
+            from heaven_base.memory.history import History
+            
+            # Generate HEAVEN tool from function
+            heaven_tool_class = make_heaven_tool_from_docstring(function)
+            
+            # Create temporary agent to access tool schema properly
+            config = HeavenAgentConfig(
+                name="TempSchemaAgent",
+                system_prompt="Temporary agent for schema extraction",
+                tools=[heaven_tool_class],
+                provider=ProviderEnum.OPENAI,
+                model="gpt-4o-mini",
+                temperature=0.7,
+                max_tokens=1000
+            )
+            
+            unified_chat = UnifiedChat()
+            history = History(messages=[])
+            agent = BaseHeavenAgent(config, unified_chat, history)
+            
+            # Find our tool in the agent's tools list
+            for tool in agent.tools:
+                tool_class_name = type(tool).__name__.lower()
+                if function.__name__.replace('_', '').lower() in tool_class_name:
+                    if hasattr(tool, 'args_schema') and tool.args_schema:
+                        # Create instance to access arguments
+                        schema_instance = tool.args_schema()
+                        if hasattr(schema_instance, 'arguments'):
+                            # Format the args_schema as readable documentation
+                            docstring = self._format_heaven_tool_schema(schema_instance.arguments, function_name)
+                    break
+            
         except Exception:
-            docstring = f"⚠️ Could not display docstring for {function_name}"
+            # Fall through to docstring extraction
+            pass
+        
+        # 2. Fall back to raw docstring extraction
+        if not docstring:
+            try:
+                raw_docstring = function.__doc__
+                if raw_docstring and raw_docstring.strip():
+                    docstring = raw_docstring.strip()
+            except Exception:
+                pass
+        
+        # 3. Final fallback to warning message
+        if not docstring:
+            docstring = f"⚠️ No docstring available for {function_name}"
         
         return signature, docstring
+    
+    def _format_heaven_tool_schema(self, schema_data, function_name: str) -> str:
+        """Format HEAVEN tool args_schema into readable documentation."""
+        try:
+            if not schema_data or not isinstance(schema_data, dict):
+                return f"Auto-generated tool for {function_name} (no parameters)"
+            
+            # Format each parameter
+            formatted_lines = [f"📋 **Rich Schema for {function_name}()**", ""]
+            
+            for param_name, param_info in schema_data.items():
+                param_type = param_info.get('type', 'unknown')
+                description = param_info.get('description', f'Parameter {param_name}')
+                required = param_info.get('required', True)
+                
+                # Format type information with rich details
+                type_info = self._format_parameter_type(param_info, param_name)
+                
+                # Build parameter line
+                req_marker = "**required**" if required else "*optional*"
+                formatted_lines.append(f"• `{param_name}` ({type_info}) - {req_marker}")
+                formatted_lines.append(f"  {description}")
+                
+                # Add nested object details
+                if param_type == 'object' and 'nested' in param_info:
+                    nested_info = param_info['nested']
+                    formatted_lines.append("  Object fields:")
+                    for field_name, field_data in nested_info.items():
+                        if isinstance(field_data, dict) and field_name in field_data:
+                            field_info = field_data[field_name]
+                            field_type = field_info.get('type', 'unknown')
+                            field_desc = field_info.get('description', f'{field_name} field')
+                            field_req = field_info.get('required', True)
+                            req_str = " *required*" if field_req else " *optional*"
+                            formatted_lines.append(f"    - `{field_name}` ({field_type}){req_str}: {field_desc}")
+                
+                formatted_lines.append("")  # Empty line between parameters
+            
+            return "\n".join(formatted_lines)
+            
+        except Exception as e:
+            return f"Auto-generated tool for {function_name} (schema parsing error: {str(e)})"
+    
+    def _format_parameter_type(self, param_info, param_name: str) -> str:
+        """Format parameter type information with rich details."""
+        param_type = param_info.get('type', 'unknown')
+        
+        if param_type == 'array':
+            items_info = param_info.get('items', {})
+            item_type = items_info.get('type', 'unknown')
+            return f"List[{item_type}]"
+        elif param_type == 'dict':
+            if 'additionalProperties' in param_info:
+                value_type = param_info['additionalProperties'].get('type', 'Any')
+                return f"Dict[str, {value_type}]"
+            else:
+                return "Dict[str, Any]"
+        elif param_type == 'object':
+            return f"{param_name.title()}Object"
+        else:
+            return param_type
 
     def _get_node_menu(self, node_coord: str) -> dict:
         """Get menu display for a node."""
@@ -994,12 +1157,8 @@ class TreeShellBase:
             if function_name:
                 func_signature, func_docstring = self._get_function_docs(function_name, node)
                 signature = func_signature
-                # Use docstring as description if available and not a fallback warning
-                if func_docstring and not func_docstring.startswith("⚠️"):
-                    description = func_docstring
-                elif func_docstring:
-                    # Show both original description and warning
-                    description = f"{description}\n\n{func_docstring}"
+                # Don't override description - preserve original HEAVEN resolution protocol
+                # The renderer will handle description resolution properly
         
         # Use DisplayBrief for root node description
         if node_coord == "0":
@@ -1032,6 +1191,7 @@ class TreeShellBase:
             "prompt": node.get("prompt", f"Node {node_coord}"),
             "description": description,
             "signature": signature,
+            "args_schema": node.get("args_schema", {}),
             "menu_options": menu_options,
             "universal_commands": universal_commands,
             "node_type": node.get("type"),

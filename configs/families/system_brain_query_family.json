@@ -5,11 +5,11 @@
   "nodes": {
     "system_brain_query": {
       "type": "Menu",
-      "prompt": "🤖 Brain Agent Query",
+      "prompt": "\ud83e\udd16 Brain Agent Query",
       "description": "Query knowledge brains for instructions (iterative deepening supported)",
       "signature": "brain_agent_query() -> query_options"
     },
-    "system_brain_query.1": {
+    "action_one": {
       "type": "Callable",
       "prompt": "Fresh Query",
       "description": "Start new query to a knowledge brain",
@@ -21,7 +21,7 @@
         "query": "str"
       }
     },
-    "system_brain_query.2": {
+    "action_two": {
       "type": "Callable",
       "prompt": "Deepen Query",
       "description": "Deepen previous query for more detailed understanding",
@@ -33,7 +33,7 @@
         "original_query": "str"
       }
     },
-    "system_brain_query.3": {
+    "action_three": {
       "type": "Callable",
       "prompt": "Continue Conversation",
       "description": "Continue brain agent conversation with follow-up",
@@ -45,7 +45,7 @@
         "follow_up": "str"
       }
     },
-    "system_brain_query.4": {
+    "action_four": {
       "type": "Callable",
       "prompt": "Show Conversation History",
       "description": "Display brain agent conversation history",

@@ -1,15 +1,15 @@
 {
   "family_root": "system_linguistic",
   "domain": "system_linguistic",
-  "description": "Hierarchy tracking: Word → Sentence → Paragraph → Page → Chapter → Book → Volume",
+  "description": "Hierarchy tracking: Word \u2192 Sentence \u2192 Paragraph \u2192 Page \u2192 Chapter \u2192 Book \u2192 Volume",
   "nodes": {
     "system_linguistic": {
       "type": "Menu",
-      "prompt": "📝 Linguistic Structures",
-      "description": "Hierarchy tracking: Word → Sentence → Paragraph → Page → Chapter → Book → Volume",
+      "prompt": "\ud83d\udcdd Linguistic Structures",
+      "description": "Hierarchy tracking: Word \u2192 Sentence \u2192 Paragraph \u2192 Page \u2192 Chapter \u2192 Book \u2192 Volume",
       "signature": "linguistic_structures() -> structure_options"
     },
-    "system_linguistic.1": {
+    "action_one": {
       "type": "Callable",
       "prompt": "Track Structures",
       "description": "Auto-classify and track linguistic structures in session",
@@ -19,7 +19,7 @@
         "enabled": "bool"
       }
     },
-    "system_linguistic.2": {
+    "action_two": {
       "type": "Callable",
       "prompt": "Classify Command",
       "description": "Classify a command into linguistic hierarchy",
@@ -29,14 +29,14 @@
         "command": "str"
       }
     },
-    "system_linguistic.3": {
+    "action_three": {
       "type": "Callable",
       "prompt": "View Hierarchy",
       "description": "Show current linguistic structure hierarchy",
       "signature": "view_hierarchy() -> dict",
       "function_name": "_view_linguistic_hierarchy"
     },
-    "system_linguistic.4": {
+    "action_four": {
       "type": "Callable",
       "prompt": "Structure Stats",
       "description": "Statistics on linguistic structure usage",

@@ -856,36 +856,17 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
     """
     
     def __init__(self, config: dict = None, parent_approval_callback=None):
-        # Load base config and user config, then merge with provided config
-        base_config = self._static_load_config("base_default_config_v2.json")
+        # Load user config which specifies families to load
         user_config = self._static_load_config("user_default_config_v2.json")
         
-        # Start with base config
-        final_config = base_config.copy() if base_config else {}
-        
-        # Add user-specific nodes (0.3.*, 0.4.*)
-        if user_config and "nodes" in user_config:
-            if "nodes" not in final_config:
-                final_config["nodes"] = {}
-            final_config["nodes"].update(user_config["nodes"])
+        # Start with user config as base
+        final_config = user_config.copy() if user_config else {}
         
         # Merge provided config (app-specific customization)
         if config:
-            if "nodes" in config:
-                if "nodes" not in final_config:
-                    final_config["nodes"] = {}
-                final_config["nodes"].update(config["nodes"])
-                # Remove nodes from config to avoid double-updating
-                config_without_nodes = {k: v for k, v in config.items() if k != "nodes"}
-                final_config.update(config_without_nodes)
-            else:
-                final_config.update(config)
+            final_config.update(config)
         
-        # Set default role for user apps if not specified
-        if 'role' not in final_config:
-            final_config['role'] = 'AI Automation Emergence Engineer'
-        
-        # Initialize with properly layered config
+        # Initialize with family-based config (TreeShellBase will handle family loading)
         TreeShell.__init__(self, final_config)
         self.__init_user_features__(parent_approval_callback)
     

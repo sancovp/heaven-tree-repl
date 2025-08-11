@@ -1,114 +1,33 @@
 {
   "family_root": "agent_management",
-  "domain": "agent_management", 
+  "domain": "agent_management",
   "description": "Human interface for managing AI agents and workflows",
   "nodes": {
     "agent_management": {
       "id": "agent_management",
-      "title": "🎮 Agent Management Hub",
+      "title": "\ud83c\udfae Agent Management Hub",
       "description": "Human interface for managing AI agents and workflows",
       "legacy_coordinate": "0.3"
     },
-    "agent_management.equipment": {
+    "equipment": {
       "id": "agent_management.equipment",
-      "title": "🤖 Agent Management",
+      "title": "\ud83e\udd16 Agent Management",
       "description": "Configure and manage AI agents",
       "legacy_coordinate": "0.3.1"
     },
-    "agent_management.equipment.system": {
-      "id": "agent_management.equipment.system",
-      "title": "🔧 Equipment System",
-      "description": "Equip/unequip agent components",
-      "legacy_coordinate": "0.3.1.1"
+    "system": {
+      "id": "agent_management.system",
+      "title": "\u2699\ufe0f System",
+      "description": "System settings and monitoring",
+      "legacy_coordinate": "0.3.4"
     },
-    "agent_management.equipment.system.prompts": {
+    "prompts": {
       "id": "agent_management.equipment.system.prompts",
-      "title": "📝 System Prompts",
+      "title": "\ud83d\udcdd System Prompts",
       "description": "Manage system prompts",
       "legacy_coordinate": "0.3.1.1.1"
     },
-    "agent_management.equipment.system.prompts.equip": {
-      "id": "agent_management.equipment.system.prompts.equip",
-      "title": "Equip System Prompt",
-      "description": "Add or replace system prompt",
-      "legacy_coordinate": "0.3.1.1.1.1",
-      "callable": {
-        "function_name": "equip_system_prompt",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "equip_system_prompt",
-        "args_schema": {}
-      }
-    },
-    "agent_management.equipment.system.prompts.unequip": {
-      "id": "agent_management.equipment.system.prompts.unequip",
-      "title": "Unequip System Prompt", 
-      "description": "Remove current system prompt",
-      "legacy_coordinate": "0.3.1.1.1.2",
-      "callable": {
-        "function_name": "unequip_system_prompt",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "unequip_system_prompt"
-      }
-    },
-    "agent_management.equipment.system.prompts.list": {
-      "id": "agent_management.equipment.system.prompts.list",
-      "title": "List System Prompts",
-      "description": "Show current system prompt",
-      "legacy_coordinate": "0.3.1.1.1.3",
-      "callable": {
-        "function_name": "list_system_prompts",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "list_system_prompts"
-      }
-    },
-    "agent_management.equipment.system.tools": {
-      "id": "agent_management.equipment.system.tools",
-      "title": "🛠️ Tools",
-      "description": "Manage agent tools",
-      "legacy_coordinate": "0.3.1.1.2"
-    },
-    "agent_management.equipment.system.tools.equip": {
-      "id": "agent_management.equipment.system.tools.equip",
-      "title": "Equip Tool",
-      "description": "Add a tool to the agent",
-      "legacy_coordinate": "0.3.1.1.2.1",
-      "callable": {
-        "function_name": "equip_tool",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "equip_tool",
-        "args_schema": {"tool_name": "str"}
-      }
-    },
-    "agent_management.equipment.system.tools.unequip": {
-      "id": "agent_management.equipment.system.tools.unequip",
-      "title": "Unequip Tool",
-      "description": "Remove a tool from the agent",
-      "legacy_coordinate": "0.3.1.1.2.2",
-      "callable": {
-        "function_name": "unequip_tool",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "unequip_tool",
-        "args_schema": {"tool_name": "str"}
-      }
-    },
-    "agent_management.equipment.system.tools.list": {
-      "id": "agent_management.equipment.system.tools.list",
-      "title": "List Tools",
-      "description": "Show available and equipped tools",
-      "legacy_coordinate": "0.3.1.1.2.3",
-      "callable": {
-        "function_name": "list_tools",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "list_tools"
-      }
-    },
-    "agent_management.equipment.system.provider": {
-      "id": "agent_management.equipment.system.provider",
-      "title": "🤖 Provider",
-      "description": "Manage AI provider",
-      "legacy_coordinate": "0.3.1.1.3"
-    },
-    "agent_management.equipment.system.provider.equip": {
+    "equip": {
       "id": "agent_management.equipment.system.provider.equip",
       "title": "Equip Provider",
       "description": "Set AI provider (anthropic, openai, google)",
@@ -117,10 +36,12 @@
         "function_name": "equip_provider",
         "import_path": "heaven_tree_repl.agent_config_management",
         "import_object": "equip_provider",
-        "args_schema": {"provider": "str"}
+        "args_schema": {
+          "provider": "str"
+        }
       }
     },
-    "agent_management.equipment.system.provider.unequip": {
+    "unequip": {
       "id": "agent_management.equipment.system.provider.unequip",
       "title": "Unequip Provider",
       "description": "Remove current provider",
@@ -131,48 +52,7 @@
         "import_object": "unequip_provider"
       }
     },
-    "agent_management.equipment.system.provider.list": {
-      "id": "agent_management.equipment.system.provider.list",
-      "title": "List Providers",
-      "description": "Show available providers",
-      "legacy_coordinate": "0.3.1.1.3.3",
-      "callable": {
-        "function_name": "list_providers",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "list_providers"
-      }
-    },
-    "agent_management.equipment.config": {
-      "id": "agent_management.equipment.config",
-      "title": "💾 Config Management",
-      "description": "Save and load agent configurations",
-      "legacy_coordinate": "0.3.1.2"
-    },
-    "agent_management.equipment.config.save": {
-      "id": "agent_management.equipment.config.save",
-      "title": "Save Config As",
-      "description": "Save current config to file",
-      "legacy_coordinate": "0.3.1.2.1",
-      "callable": {
-        "function_name": "save_config_as",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "save_config_as",
-        "args_schema": {"name": "str"}
-      }
-    },
-    "agent_management.equipment.config.copy": {
-      "id": "agent_management.equipment.config.copy",
-      "title": "Copy Existing",
-      "description": "Load existing config into dynamic config",
-      "legacy_coordinate": "0.3.1.2.2",
-      "callable": {
-        "function_name": "copy_existing",
-        "import_path": "heaven_tree_repl.agent_config_management",
-        "import_object": "copy_existing",
-        "args_schema": {"name": "str"}
-      }
-    },
-    "agent_management.equipment.config.list": {
+    "list": {
       "id": "agent_management.equipment.config.list",
       "title": "List Saved Configs",
       "description": "Show all saved configurations",
@@ -183,13 +63,59 @@
         "import_object": "list_saved_configs"
       }
     },
-    "agent_management.equipment.utils": {
+    "tools": {
+      "id": "agent_management.equipment.system.tools",
+      "title": "\ud83d\udee0\ufe0f Tools",
+      "description": "Manage agent tools",
+      "legacy_coordinate": "0.3.1.1.2"
+    },
+    "provider": {
+      "id": "agent_management.equipment.system.provider",
+      "title": "\ud83e\udd16 Provider",
+      "description": "Manage AI provider",
+      "legacy_coordinate": "0.3.1.1.3"
+    },
+    "config": {
+      "id": "agent_management.equipment.config",
+      "title": "\ud83d\udcbe Config Management",
+      "description": "Save and load agent configurations",
+      "legacy_coordinate": "0.3.1.2"
+    },
+    "save": {
+      "id": "agent_management.equipment.config.save",
+      "title": "Save Config As",
+      "description": "Save current config to file",
+      "legacy_coordinate": "0.3.1.2.1",
+      "callable": {
+        "function_name": "save_config_as",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "save_config_as",
+        "args_schema": {
+          "name": "str"
+        }
+      }
+    },
+    "copy": {
+      "id": "agent_management.equipment.config.copy",
+      "title": "Copy Existing",
+      "description": "Load existing config into dynamic config",
+      "legacy_coordinate": "0.3.1.2.2",
+      "callable": {
+        "function_name": "copy_existing",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "copy_existing",
+        "args_schema": {
+          "name": "str"
+        }
+      }
+    },
+    "utils": {
       "id": "agent_management.equipment.utils",
-      "title": "🔄 Reset & Utils",
+      "title": "\ud83d\udd04 Reset & Utils",
       "description": "Reset config and utility functions",
       "legacy_coordinate": "0.3.1.3"
     },
-    "agent_management.equipment.utils.reset": {
+    "reset": {
       "id": "agent_management.equipment.utils.reset",
       "title": "Reset Dynamic Config",
       "description": "Clear current dynamic configuration",
@@ -200,13 +126,13 @@
         "import_object": "reset_dynamic_config"
       }
     },
-    "agent_management.approvals": {
+    "approvals": {
       "id": "agent_management.approvals",
-      "title": "✅ Workflow Approvals",
+      "title": "\u2705 Workflow Approvals",
       "description": "Review and approve agent-generated workflows",
       "legacy_coordinate": "0.3.2"
     },
-    "agent_management.approvals.view_pending": {
+    "view_pending": {
       "id": "agent_management.approvals.view_pending",
       "title": "View Pending Approvals",
       "description": "Show all workflows awaiting human approval",
@@ -215,17 +141,11 @@
         "function_name": "_view_pending_approvals"
       }
     },
-    "agent_management.sessions": {
-      "id": "agent_management.sessions", 
-      "title": "📊 Sessions",
+    "sessions": {
+      "id": "agent_management.sessions",
+      "title": "\ud83d\udcca Sessions",
       "description": "Manage active and historical sessions",
       "legacy_coordinate": "0.3.3"
-    },
-    "agent_management.system": {
-      "id": "agent_management.system",
-      "title": "⚙️ System",
-      "description": "System settings and monitoring",
-      "legacy_coordinate": "0.3.4"
     }
   }
 }

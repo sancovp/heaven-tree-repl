@@ -654,11 +654,8 @@ class CommandHandlersMixin:
         """Show complete tree navigation overview."""
         tree_structure = {}
         
-        # Build hierarchical structure from flat nodes (NAV ONLY - numeric coordinates)
-        for coordinate, node in self.nodes.items():
-            # Skip non-nav nodes (zones, semantic nodes, etc.)
-            if not coordinate[0].isdigit():
-                continue
+        # Build hierarchical structure from clean numeric nodes
+        for coordinate, node in self.numeric_nodes.items():
                 
             parts = coordinate.split(".")
             current = tree_structure
@@ -687,7 +684,14 @@ class CommandHandlersMixin:
             # Sort keys numerically by coordinate parts, not alphabetically
             def sort_key(x):
                 parts = x.split('.')
-                return (len(parts), [int(p) if p.isdigit() else p for p in parts])
+                # Convert all parts to strings with numeric padding for proper sorting
+                padded_parts = []
+                for p in parts:
+                    if p.isdigit():
+                        padded_parts.append(f"{int(p):08d}")  # Pad numbers to 8 digits
+                    else:
+                        padded_parts.append(p)
+                return (len(parts), padded_parts)
             
             sorted_keys = sorted(level_dict.keys(), key=sort_key)
             
