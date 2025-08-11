@@ -7,7 +7,13 @@
       "type": "Menu",
       "prompt": "\ud83d\udcdd Linguistic Structures",
       "description": "Hierarchy tracking: Word \u2192 Sentence \u2192 Paragraph \u2192 Page \u2192 Chapter \u2192 Book \u2192 Volume",
-      "signature": "linguistic_structures() -> structure_options"
+      "signature": "linguistic_structures() -> structure_options",
+      "options": {
+        "1": "action_one",
+        "2": "action_two",
+        "3": "action_three",
+        "4": "action_four"
+      }
     },
     "action_one": {
       "type": "Callable",

@@ -306,16 +306,16 @@ class TreeShellBase:
                 # Family gets NAV-1 coordinate: nav_coord.sibling_index
                 family_base_coord = f"{nav_coord}.{sibling_index}"
                 
-                # Assign cascading coordinates within this family
+                # Assign proper sibling coordinates within this family
                 for i, node_id in enumerate(node_names):
                     node_data = family_nodes[node_id]
                     
                     if i == 0:
-                        # First node gets the family base coordinate
+                        # First node gets the family base coordinate (menu node)
                         numeric_coord = family_base_coord
                     else:
-                        # Subsequent nodes cascade with .0
-                        numeric_coord = family_base_coord + ".0" * i
+                        # Subsequent nodes become siblings (.1, .2, .3, etc.)
+                        numeric_coord = family_base_coord + "." + str(i)
                     
                     # Process node data
                     processed_node = node_data.copy()
@@ -676,8 +676,10 @@ class TreeShellBase:
     
     def _get_current_node(self) -> dict:
         """Get the current node definition."""
-        # Check family nodes first, then legacy nodes as fallback
+        # Check family nodes first, then numeric nodes, then legacy nodes as fallback
         node = self.nodes.get(self.current_position)
+        if node is None and hasattr(self, 'numeric_nodes'):
+            node = self.numeric_nodes.get(self.current_position)
         if node is None and hasattr(self, 'legacy_nodes'):
             node = self.legacy_nodes.get(self.current_position, {})
         return node or {}
@@ -1105,8 +1107,10 @@ class TreeShellBase:
 
     def _get_node_menu(self, node_coord: str) -> dict:
         """Get menu display for a node."""
-        # Check family nodes first, then legacy nodes as fallback
+        # Check family nodes first, then numeric nodes, then legacy nodes as fallback
         node = self.nodes.get(node_coord)
+        if not node and hasattr(self, 'numeric_nodes'):
+            node = self.numeric_nodes.get(node_coord)
         if not node and hasattr(self, 'legacy_nodes'):
             node = self.legacy_nodes.get(node_coord)
         if not node:

@@ -8,7 +8,23 @@
       "prompt": "Meta Operations",
       "description": "State management and session operations",
       "signature": "meta_operations() -> operation_options",
-      "legacy_coordinate": "0.0.2"
+      "legacy_coordinate": "0.0.2",
+      "options": {
+        "1": "save_var",
+        "2": "get_var",
+        "3": "append_to_var",
+        "4": "delete_var",
+        "5": "list_vars",
+        "6": "save_to_file",
+        "7": "load_from_file",
+        "8": "export_session",
+        "9": "session_stats",
+        "10": "add_node",
+        "11": "update_node",
+        "12": "delete_node",
+        "13": "list_nodes",
+        "14": "get_node"
+      }
     },
     "save_var": {
       "type": "Callable",

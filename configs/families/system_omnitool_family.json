@@ -7,7 +7,12 @@
       "type": "Menu",
       "prompt": "\ud83d\udee0\ufe0f OmniTool Access",
       "description": "Access to HEAVEN's 96+ tool ecosystem",
-      "signature": "omnitool() -> tool_options"
+      "signature": "omnitool() -> tool_options",
+      "options": {
+        "1": "list_tools",
+        "2": "get_tool_info",
+        "3": "execute_tool"
+      }
     },
     "list_tools": {
       "type": "Callable",

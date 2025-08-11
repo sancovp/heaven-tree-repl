@@ -175,7 +175,7 @@ class CommandHandlersMixin:
         # Apply semantic resolution
         target_coord = self._resolve_semantic_address(original_target)
         
-        if target_coord not in self.nodes:
+        if target_coord not in self.nodes and target_coord not in self.numeric_nodes:
             return {"error": f"Target coordinate '{original_target}' not found (resolved to '{target_coord}')"}
             
         # Jump to target

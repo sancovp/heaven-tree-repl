@@ -7,7 +7,14 @@
       "type": "Menu",
       "prompt": "\ud83d\udcda Documentation",
       "description": "TreeShell documentation and command reference. To read a section, use the number + {} (e.g., '2 {}' to read Execution Syntax). Each section contains detailed guides and examples.",
-      "signature": "docs() -> documentation_options"
+      "signature": "docs() -> documentation_options",
+      "options": {
+        "6": "action_6",
+        "7": "action_7",
+        "8": "action_8",
+        "9": "action_9",
+        "10": "action_10"
+      }
     },
     "action_one": {
       "type": "Callable",
