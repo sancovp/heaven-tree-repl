@@ -1,0 +1,54 @@
+{
+  "family_root": "system_langgraph",
+  "domain": "system_langgraph",
+  "description": "LangGraph node execution and workflow construction",
+  "nodes": {
+    "system_langgraph": {
+      "type": "Menu",
+      "prompt": "🧩 HEAVEN LangGraph Legos",
+      "description": "LangGraph node execution and workflow construction",
+      "signature": "langgraph_legos() -> langgraph_options"
+    },
+    "system_langgraph.1": {
+      "type": "Callable",
+      "prompt": "Execute Graph",
+      "description": "Execute a LangGraph workflow",
+      "signature": "execute_graph(tool_name: str, parameters: dict) -> result",
+      "function_name": "execute_omnitool_graph",
+      "import_path": "langgraph_omnitool_executor",
+      "import_object": "execute_omnitool_graph",
+      "is_async": true,
+      "args_schema": {
+        "tool_name": "str",
+        "parameters": "dict"
+      }
+    },
+    "system_langgraph.2": {
+      "type": "Callable",
+      "prompt": "Graph Constructor",
+      "description": "Build LangGraph workflows visually (future feature)",
+      "signature": "graph_constructor() -> constructor_interface",
+      "function_name": "graph_constructor",
+      "import_path": "langgraph_functions",
+      "import_object": "graph_constructor"
+    },
+    "system_langgraph.3": {
+      "type": "Callable",
+      "prompt": "List Node Legos",
+      "description": "Show available LangGraph node types",
+      "signature": "list_node_legos() -> node_types",
+      "function_name": "list_node_legos",
+      "import_path": "langgraph_functions",
+      "import_object": "list_node_legos"
+    },
+    "system_langgraph.4": {
+      "type": "Callable",
+      "prompt": "List Graph Templates",
+      "description": "Show available workflow templates (future feature)",
+      "signature": "list_graph_templates() -> templates",
+      "function_name": "list_graph_templates",
+      "import_path": "langgraph_functions",
+      "import_object": "list_graph_templates"
+    }
+  }
+}

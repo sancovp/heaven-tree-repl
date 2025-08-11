@@ -1,0 +1,86 @@
+{
+  "family_root": "system_automation",
+  "domain": "system_automation",
+  "description": "Schedule = when + if + then, Automation = set of schedules, Master Schedule = all automations",
+  "nodes": {
+    "system_automation": {
+      "type": "Menu",
+      "prompt": "🤖 Automation Management",
+      "description": "Schedule = when + if + then, Automation = set of schedules, Master Schedule = all automations",
+      "signature": "automation_management() -> automation_options"
+    },
+    "system_automation.1": {
+      "type": "Callable",
+      "prompt": "Create Schedule",
+      "description": "Create single schedule: when (cron) + if (var condition) + then (linguistic structure)",
+      "signature": "create_schedule(when: str, if_condition: str, then_action: str, name: str) -> dict",
+      "function_name": "_create_schedule",
+      "args_schema": {
+        "when": "str",
+        "if_condition": "str",
+        "then_action": "str",
+        "name": "str"
+      }
+    },
+    "system_automation.2": {
+      "type": "Callable",
+      "prompt": "Create Automation",
+      "description": "Create automation (collection of related schedules)",
+      "signature": "create_automation(name: str, description: str, schedule_names: list) -> dict",
+      "function_name": "_create_automation",
+      "args_schema": {
+        "name": "str",
+        "description": "str",
+        "schedule_names": "list"
+      }
+    },
+    "system_automation.3": {
+      "type": "Callable",
+      "prompt": "List Schedules",
+      "description": "Show all schedules with when/if/then structure",
+      "signature": "list_schedules() -> dict",
+      "function_name": "_list_schedules"
+    },
+    "system_automation.4": {
+      "type": "Callable",
+      "prompt": "List Automations",
+      "description": "Show all automations and their constituent schedules",
+      "signature": "list_automations() -> dict",
+      "function_name": "_list_automations"
+    },
+    "system_automation.5": {
+      "type": "Callable",
+      "prompt": "Remove Schedule",
+      "description": "Remove a single schedule",
+      "signature": "remove_schedule(name: str) -> dict",
+      "function_name": "_remove_schedule",
+      "args_schema": {
+        "name": "str"
+      }
+    },
+    "system_automation.6": {
+      "type": "Callable",
+      "prompt": "Remove Automation",
+      "description": "Remove an entire automation (collection of schedules)",
+      "signature": "remove_automation(name: str) -> dict",
+      "function_name": "_remove_automation",
+      "args_schema": {
+        "name": "str"
+      }
+    },
+    "system_automation.7": {
+      "type": "Callable",
+      "prompt": "Scheduler Status",
+      "description": "Check if scheduler is running and show next execution times",
+      "signature": "scheduler_status() -> dict",
+      "function_name": "_scheduler_status"
+    },
+    "system_automation.8": {
+      "type": "Callable",
+      "prompt": "Run Automations",
+      "description": "Manually trigger automation check and execution",
+      "signature": "run_automations() -> dict",
+      "function_name": "_run_automations"
+    }
+  }
+}

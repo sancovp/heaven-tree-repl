@@ -1,0 +1,27 @@
+{
+  "family_root": "system",
+  "domain": "system",
+  "description": "System configuration and pathway management", 
+  "nodes": {
+    "system": {
+      "type": "Menu",
+      "prompt": "Settings & Management",
+      "description": "System configuration and pathway management",
+      "signature": "settings() -> management_options",
+      "options": {
+        "1": "system_pathways",
+        "2": "system_meta", 
+        "3": "system_mcp_generator",
+        "4": "system_omnitool",
+        "5": "system_treeshell_tool",
+        "6": "system_brain_management",
+        "7": "system_brain_query",
+        "8": "system_shortcuts",
+        "9": "system_automation",
+        "10": "system_documentation",
+        "11": "system_langgraph",
+        "12": "system_linguistic"
+      }
+    }
+  }
+}

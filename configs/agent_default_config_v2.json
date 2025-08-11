@@ -1,0 +1,11 @@
+{
+  "app_id": "agent_interface",
+  "domain": "agent_operations",
+  "role": "AI Agent",
+  "about_app": "Agent-focused interface for autonomous operations",
+  "about_domain": "AI agent workspace for autonomous task execution",
+  "families": ["system", "task_execution", "tool_management"],
+  "families_directory": "families/",
+  "nav_config": "agent_nav_config.json",
+  "zone_config": "agent_zone_config.json"
+}

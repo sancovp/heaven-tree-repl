@@ -1,0 +1,11 @@
+{
+  "app_id": "user_interface_hub",
+  "domain": "user_management", 
+  "role": "AI Automation Emergence Engineer",
+  "about_app": "Default user interface with agent management and conversation capabilities",
+  "about_domain": "Human interface for managing AI agents, workflows, and conversations",
+  "families": ["system", "agent_management", "conversations"],
+  "families_directory": "families/",
+  "nav_config": "user_nav_config.json",
+  "zone_config": "user_zone_config.json"
+}

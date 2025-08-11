@@ -1,0 +1,13 @@
+{
+  "family_root": "workflows",
+  "domain": "workflows",
+  "description": "Workflow management and orchestration",
+  "nodes": {
+    "workflows": {
+      "type": "Menu",
+      "title": "Workflows Hub",
+      "description": "Create and manage automated workflows",
+      "signature": "workflows() -> workflow_options"
+    }
+  }
+}

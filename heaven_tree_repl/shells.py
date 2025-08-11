@@ -419,8 +419,8 @@ Chain templates support variable substitution using `$variable_name` pattern:
 Shortcuts persist across sessions in JSON files with layered inheritance:
 
 • **base_shortcuts.json**: Universal shortcuts (all TreeShell types)
-• **agent_shortcuts.json**: Agent-specific shortcuts (AgentTreeShell + FullstackTreeShell)  
-• **user_shortcuts.json**: User-specific shortcuts (UserTreeShell + FullstackTreeShell)
+• **system_agent_shortcuts.json**: System defaults for agent-specific shortcuts (AgentTreeShell + FullstackTreeShell)  
+• **system_user_shortcuts.json**: System defaults for user-specific shortcuts (UserTreeShell + FullstackTreeShell)
 • **FullstackTreeShell**: Loads all three layers (base → agent → user)
 
 **Management Commands:**
@@ -769,8 +769,8 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
     
     def __init__(self, graph_config: dict = None, session_id: str = None, approval_callback=None):
         # Load base config and agent config, then merge with provided config
-        base_config = self._static_load_config("base_default_config.json")
-        agent_config = self._static_load_config("agent_default_config.json")
+        base_config = self._static_load_config("base_default_config_v2.json")
+        agent_config = self._static_load_config("agent_default_config_v2.json")
         
         # Start with base config
         final_config = base_config.copy() if base_config else {}
@@ -833,7 +833,7 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
             shortcuts.update(base_shortcuts)
         
         # Load agent shortcuts
-        agent_shortcuts = self._load_shortcuts_file("agent_shortcuts.json")
+        agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
         if agent_shortcuts:
             shortcuts.update(agent_shortcuts)
         
@@ -842,7 +842,7 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
     
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
         """Save shortcut to agent_shortcuts.json for agent-specific shortcuts."""
-        self._save_shortcut_to_specific_file(alias, shortcut_data, "agent_shortcuts.json")
+        self._save_shortcut_to_specific_file(alias, shortcut_data, "system_agent_shortcuts.json")
     
     def handle_command(self, command: str) -> dict:
         """Override to use agent command handling."""
@@ -857,8 +857,8 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
     
     def __init__(self, config: dict = None, parent_approval_callback=None):
         # Load base config and user config, then merge with provided config
-        base_config = self._static_load_config("base_default_config.json")
-        user_config = self._static_load_config("user_default_config.json")
+        base_config = self._static_load_config("base_default_config_v2.json")
+        user_config = self._static_load_config("user_default_config_v2.json")
         
         # Start with base config
         final_config = base_config.copy() if base_config else {}
@@ -922,7 +922,7 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
             shortcuts.update(base_shortcuts)
         
         # Load user shortcuts
-        user_shortcuts = self._load_shortcuts_file("user_shortcuts.json")
+        user_shortcuts = self._load_shortcuts_file("system_user_shortcuts.json")
         if user_shortcuts:
             shortcuts.update(user_shortcuts)
         
@@ -931,7 +931,7 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
     
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
         """Save shortcut to user_shortcuts.json for user-specific shortcuts."""
-        self._save_shortcut_to_specific_file(alias, shortcut_data, "user_shortcuts.json")
+        self._save_shortcut_to_specific_file(alias, shortcut_data, "system_user_shortcuts.json")
 
 
 class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
@@ -941,8 +941,8 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
     
     def __init__(self, user_config: dict = None, agent_config: dict = None, base_config: dict = None, parent_approval_callback=None):
         # Load all three config layers and merge them
-        base_cfg = base_config if base_config else self._static_load_config("base_default_config.json")
-        agent_cfg = agent_config if agent_config else self._static_load_config("agent_default_config.json")
+        base_cfg = base_config if base_config else self._static_load_config("base_default_config_v2.json")
+        agent_cfg = agent_config if agent_config else self._static_load_config("agent_default_config_v2.json")
         user_cfg = user_config if user_config else self._static_load_config("user_default_config.json")
         
         # Start with base config
@@ -1008,12 +1008,12 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
             shortcuts.update(base_shortcuts)
         
         # Load agent shortcuts
-        agent_shortcuts = self._load_shortcuts_file("agent_shortcuts.json")
+        agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
         if agent_shortcuts:
             shortcuts.update(agent_shortcuts)
         
         # Load user shortcuts
-        user_shortcuts = self._load_shortcuts_file("user_shortcuts.json")
+        user_shortcuts = self._load_shortcuts_file("system_user_shortcuts.json")
         if user_shortcuts:
             shortcuts.update(user_shortcuts)
         
@@ -1022,4 +1022,4 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
     
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
         """Save shortcut to user_shortcuts.json for fullstack shortcuts (inherits from UserTreeShell)."""
-        self._save_shortcut_to_specific_file(alias, shortcut_data, "user_shortcuts.json")
+        self._save_shortcut_to_specific_file(alias, shortcut_data, "system_user_shortcuts.json")

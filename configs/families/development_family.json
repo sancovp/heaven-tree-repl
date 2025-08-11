@@ -1,0 +1,13 @@
+{
+  "family_root": "development",
+  "domain": "development",
+  "description": "Development tools and workflows",
+  "nodes": {
+    "development": {
+      "type": "Menu",
+      "title": "Development Hub",
+      "description": "Development tools, debugging, and code management",
+      "signature": "development() -> dev_options"
+    }
+  }
+}

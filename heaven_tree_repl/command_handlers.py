@@ -10,6 +10,82 @@ from typing import Dict, List, Any, Optional, Tuple
 class CommandHandlersMixin:
     """Mixin class providing command handling functionality."""
     
+    def _resolve_semantic_address(self, target_coord: str) -> str:
+        """Auto-resolve family.node.subnode addresses to coordinates.
+        
+        Resolution Priority:
+        1. Node name resolution: equipment_selection → search all families for matching node name
+        2. Partial path resolution: equipment.tools → resolve within families
+        3. Full family resolution: agent_management.equipment.tools → 0.1.equipment.tools
+        4. System family resolution: system.workflows → 0.0.workflows
+        5. Legacy coordinates: 0.1.2 (exact numeric matches)
+        6. Manual shortcuts: brain → existing shortcut system
+        """
+        original_target = target_coord
+        
+        # Skip resolution for numeric coordinates (legacy system)
+        if target_coord[0].isdigit():
+            return target_coord
+        
+        # Check existing shortcuts first
+        shortcuts = self.session_vars.get("_shortcuts", {})
+        if target_coord in shortcuts:
+            shortcut = shortcuts[target_coord]
+            if isinstance(shortcut, dict) and shortcut.get("type") == "jump":
+                return shortcut.get("coordinate", target_coord)
+            elif isinstance(shortcut, str):
+                return shortcut  # Legacy shortcut format
+        
+        # Resolution 1: Node name resolution (search all nodes for exact match)
+        if "." not in target_coord:
+            for coord, node in self.nodes.items():
+                node_id = node.get("id", "")
+                if node_id and node_id.endswith(f".{target_coord}"):
+                    # print(f"Debug: Resolved node name '{target_coord}' to coordinate '{coord}'")
+                    return coord
+                # Also check if the coordinate itself ends with the target
+                if coord.split(".")[-1] == target_coord:
+                    # print(f"Debug: Resolved node name '{target_coord}' to coordinate '{coord}'")
+                    return coord
+        
+        # Resolution 2 & 3: Family path resolution
+        if "." in target_coord:
+            parts = target_coord.split(".")
+            family_name = parts[0]
+            
+            # Check if first part is a known family
+            if hasattr(self, 'family_mappings') and family_name in self.family_mappings:
+                nav_coord = self.family_mappings[family_name]
+                if len(parts) == 1:
+                    # Just family name: agent_management → 0.1
+                    resolved = nav_coord
+                else:
+                    # Family path: agent_management.equipment.tools → 0.1.equipment.tools
+                    relative_path = ".".join(parts[1:])
+                    resolved = f"{nav_coord}.{relative_path}"
+                
+                if resolved in self.nodes:
+                    # print(f"Debug: Resolved family path '{target_coord}' to coordinate '{resolved}'")
+                    return resolved
+        
+        # Resolution 4: System family resolution
+        if target_coord.startswith("system."):
+            relative_path = target_coord[7:]  # Remove "system."
+            resolved = f"0.0.{relative_path}"
+            if resolved in self.nodes:
+                # print(f"Debug: Resolved system path '{target_coord}' to coordinate '{resolved}'")
+                return resolved
+        
+        # Resolution 5: Partial path search (search for paths ending with the target)
+        if "." in target_coord:
+            for coord in self.nodes.keys():
+                if coord.endswith(f".{target_coord}") or coord.endswith(target_coord):
+                    # print(f"Debug: Resolved partial path '{target_coord}' to coordinate '{coord}'")
+                    return coord
+        
+        # print(f"Debug: Could not resolve semantic address '{target_coord}', trying as-is")
+        return target_coord
+    
     async def _handle_numerical_selection(self, option: int, args_str: str) -> dict:
         """Handle numerical menu selection."""
         current_node = self._get_current_node()
@@ -88,16 +164,19 @@ class CommandHandlersMixin:
                 return {"error": f"Invalid option: {option}"}
     
     async def _handle_jump(self, args_str: str) -> dict:
-        """Handle jump command."""
+        """Handle jump command with semantic resolution."""
         parts = args_str.split(None, 1)
         if not parts:
             return {"error": "jump requires target coordinate"}
             
-        target_coord = parts[0]
+        original_target = parts[0]
         args_str = parts[1] if len(parts) > 1 else ""
         
+        # Apply semantic resolution
+        target_coord = self._resolve_semantic_address(original_target)
+        
         if target_coord not in self.nodes:
-            return {"error": f"Target coordinate {target_coord} not found"}
+            return {"error": f"Target coordinate '{original_target}' not found (resolved to '{target_coord}')"}
             
         # Jump to target
         self.current_position = target_coord
@@ -256,7 +335,9 @@ class CommandHandlersMixin:
                     final_coord = shortcut
             
             if final_coord not in self.nodes:
-                return {"error": f"Target coordinate {final_coord} not found in step {i+1} (resolved from '{target_coord}')"}
+                # Check legacy nodes as fallback
+                if not (hasattr(self, 'legacy_nodes') and final_coord in self.legacy_nodes):
+                    return {"error": f"Target coordinate {final_coord} not found in step {i+1} (resolved from '{target_coord}')"}
                 
             # Execute step
             result, success = await self._execute_action(final_coord, step_args)
@@ -573,8 +654,12 @@ class CommandHandlersMixin:
         """Show complete tree navigation overview."""
         tree_structure = {}
         
-        # Build hierarchical structure from flat nodes
+        # Build hierarchical structure from flat nodes (NAV ONLY - numeric coordinates)
         for coordinate, node in self.nodes.items():
+            # Skip non-nav nodes (zones, semantic nodes, etc.)
+            if not coordinate[0].isdigit():
+                continue
+                
             parts = coordinate.split(".")
             current = tree_structure
             

@@ -1,0 +1,152 @@
+{
+  "family_root": "conversations",
+  "domain": "conversations", 
+  "description": "Chat and conversation management system",
+  "nodes": {
+    "conversations": {
+      "id": "conversations",
+      "title": "💬 Conversation Management",
+      "description": "Default conversation system for all TreeShell applications",
+      "legacy_coordinate": "0.4"
+    },
+    "conversations.start": {
+      "id": "conversations.start",
+      "title": "Start New Chat",
+      "description": "Start a new conversation using the currently selected agent config",
+      "legacy_coordinate": "0.4.1",
+      "callable": {
+        "function_name": "_start_chat",
+        "import_path": "heaven_tree_repl.conversation_chat_app",
+        "import_object": "_start_chat",
+        "is_async": true,
+        "args_schema": {
+          "title": "str",
+          "message": "str", 
+          "tags": "str",
+          "agent_config": "$selected_agent_config"
+        }
+      }
+    },
+    "conversations.continue": {
+      "id": "conversations.continue",
+      "title": "Continue Chat",
+      "description": "Continue the current active conversation with the selected agent",
+      "legacy_coordinate": "0.4.2",
+      "callable": {
+        "function_name": "_continue_chat",
+        "import_path": "heaven_tree_repl.conversation_chat_app",
+        "import_object": "_continue_chat",
+        "is_async": true,
+        "args_schema": {
+          "message": "str",
+          "agent_config": "$selected_agent_config"
+        }
+      }
+    },
+    "conversations.list": {
+      "id": "conversations.list",
+      "title": "List Conversations",
+      "description": "Show recent conversations",
+      "legacy_coordinate": "0.4.3",
+      "callable": {
+        "function_name": "_list_conversations",
+        "import_path": "heaven_tree_repl.conversation_chat_app",
+        "import_object": "_list_conversations",
+        "args_schema": {
+          "limit": "int"
+        }
+      }
+    },
+    "conversations.load": {
+      "id": "conversations.load",
+      "title": "Load Conversation",
+      "description": "Switch to an existing conversation",
+      "legacy_coordinate": "0.4.4",
+      "callable": {
+        "function_name": "_load_conversation",
+        "import_path": "heaven_tree_repl.conversation_chat_app",
+        "import_object": "_load_conversation",
+        "args_schema": {
+          "conversation_id": "str"
+        }
+      }
+    },
+    "conversations.search": {
+      "id": "conversations.search",
+      "title": "Search Conversations",
+      "description": "Search conversations by title or tags",
+      "legacy_coordinate": "0.4.5",
+      "callable": {
+        "function_name": "_search_conversations",
+        "import_path": "heaven_tree_repl.conversation_chat_app",
+        "import_object": "_search_conversations",
+        "args_schema": {
+          "query": "str"
+        }
+      }
+    },
+    "conversations.management": {
+      "id": "conversations.management",
+      "title": "📋 Management Tools",
+      "description": "Advanced conversation management features",
+      "legacy_coordinate": "0.2.1"
+    },
+    "conversations.management.archive": {
+      "id": "conversations.management.archive",
+      "title": "Archive Conversations",
+      "description": "Archive old conversations",
+      "legacy_coordinate": "0.2.1.1",
+      "callable": {
+        "function_name": "archive_conversations",
+        "import_path": "heaven_tree_repl.conversation_management",
+        "import_object": "archive_conversations",
+        "args_schema": {
+          "older_than_days": "int"
+        }
+      }
+    },
+    "conversations.management.export": {
+      "id": "conversations.management.export",
+      "title": "Export Conversations",
+      "description": "Export conversations to various formats",
+      "legacy_coordinate": "0.2.1.2",
+      "callable": {
+        "function_name": "export_conversations",
+        "import_path": "heaven_tree_repl.conversation_management",
+        "import_object": "export_conversations",
+        "args_schema": {
+          "format": "str",
+          "conversation_ids": "list"
+        }
+      }
+    },
+    "conversations.analytics": {
+      "id": "conversations.analytics",
+      "title": "📊 Analytics",
+      "description": "Conversation analytics and insights",
+      "legacy_coordinate": "0.2.2"
+    },
+    "conversations.analytics.stats": {
+      "id": "conversations.analytics.stats",
+      "title": "Conversation Stats",
+      "description": "Show conversation usage statistics",
+      "legacy_coordinate": "0.2.2.1",
+      "callable": {
+        "function_name": "conversation_stats",
+        "import_path": "heaven_tree_repl.conversation_analytics",
+        "import_object": "conversation_stats"
+      }
+    },
+    "conversations.analytics.patterns": {
+      "id": "conversations.analytics.patterns",
+      "title": "Usage Patterns",
+      "description": "Analyze conversation usage patterns",
+      "legacy_coordinate": "0.2.2.2",
+      "callable": {
+        "function_name": "analyze_usage_patterns",
+        "import_path": "heaven_tree_repl.conversation_analytics",
+        "import_object": "analyze_usage_patterns"
+      }
+    }
+  }
+}

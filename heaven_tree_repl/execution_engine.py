@@ -98,6 +98,8 @@ class ExecutionEngineMixin:
             args = {}
             
         node = self.nodes.get(node_coord)
+        if not node and hasattr(self, 'legacy_nodes'):
+            node = self.legacy_nodes.get(node_coord)
         if not node:
             return {"error": f"Node {node_coord} not found"}, False
             
@@ -226,9 +228,9 @@ class ExecutionEngineMixin:
                         result = {"error": f"Function {function_name} is not callable"}
                         success = False
                 else:
-                    # Generic execution - store args as result for now
-                    result = f"Executed {function_name or 'action'} with {final_args}"
-                    success = True
+                    # Function not found - return error instead of fake success
+                    result = {"error": f"Function {function_name} not found in registries or as instance method"}
+                    success = False
                     
         except Exception as e:
             # Capture any unhandled exceptions and return as error result
@@ -400,6 +402,11 @@ class ExecutionEngineMixin:
                         else:
                             # Execute unconstrained template
                             return await self._handle_chain(template)
+            
+            # Check if this looks like a coordinate pattern (helpful suggestion)
+            import re
+            if re.match(r'^[0-9]+(\.[0-9]+)*$', cmd):
+                return {"error": f"Sounds like you might want to go somewhere else. Did you mean `jump {cmd}`?"}
                             
             return {"error": f"Unknown command: {cmd}"}
     

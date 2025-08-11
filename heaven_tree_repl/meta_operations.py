@@ -206,15 +206,19 @@ class MetaOperationsMixin:
         else:
             result_detail = "static node"
         
-        # Add the node
+        # Add the node to runtime
         self.nodes[coordinate] = node_data.copy()
+        
+        # Persist to HEAVEN_DATA_DIR if available
+        persistence_result = self._persist_node_to_heaven_data_dir(coordinate, node_data)
         
         result = {
             "added": True,
             "coordinate": coordinate,
             "node_type": node_data["type"],
             "prompt": node_data["prompt"],
-            "implementation": result_detail
+            "implementation": result_detail,
+            "persistence": persistence_result
         }
         return result, True
     
@@ -315,6 +319,216 @@ class MetaOperationsMixin:
             "node_data": node.copy(),
             "exists": True
         }
+        return result, True
+    
+    def _persist_node_to_heaven_data_dir(self, coordinate: str, node_data: dict) -> dict:
+        """Persist a node to the appropriate family file in HEAVEN_DATA_DIR."""
+        import os
+        import json
+        
+        heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR')
+        if not heaven_data_dir:
+            return {"status": "skipped", "reason": "HEAVEN_DATA_DIR not set"}
+        
+        try:
+            # Get version for directory name
+            version = self._get_safe_version()
+            app_data_dir = os.path.join(heaven_data_dir, f"{self.app_id}_{version}")
+            families_dir = os.path.join(app_data_dir, "configs", "families")
+            
+            # Determine which family this coordinate belongs to
+            family_name = self._determine_family_for_coordinate(coordinate)
+            if not family_name:
+                return {"status": "error", "reason": f"Could not determine family for coordinate {coordinate}"}
+            
+            family_file = os.path.join(families_dir, f"{family_name}_family.json")
+            
+            # Load existing family config or create new one
+            if os.path.exists(family_file):
+                with open(family_file, 'r') as f:
+                    family_config = json.load(f)
+            else:
+                family_config = {"nodes": {}}
+            
+            # Convert coordinate back to family-relative node ID
+            family_node_id = self._coordinate_to_family_node_id(coordinate, family_name)
+            
+            # Create family node structure from coordinate node
+            family_node = {
+                "title": node_data["prompt"],
+                "description": node_data["description"]
+            }
+            
+            # Add callable information if present
+            if node_data.get("type") == "Callable":
+                family_node["callable"] = {
+                    "function_name": node_data.get("function_name"),
+                    "is_async": node_data.get("is_async", False),
+                    "args_schema": node_data.get("args_schema", {})
+                }
+                
+                # Include import information if available
+                if "import_path" in node_data:
+                    family_node["callable"]["import_path"] = node_data["import_path"]
+                if "import_object" in node_data:
+                    family_node["callable"]["import_object"] = node_data["import_object"]
+            
+            # Store the node in family config
+            if "nodes" not in family_config:
+                family_config["nodes"] = {}
+            family_config["nodes"][family_node_id] = family_node
+            
+            # Save updated family config
+            os.makedirs(families_dir, exist_ok=True)
+            with open(family_file, 'w') as f:
+                json.dump(family_config, f, indent=2)
+            
+            return {
+                "status": "success", 
+                "family": family_name,
+                "family_file": family_file,
+                "node_id": family_node_id
+            }
+            
+        except Exception as e:
+            return {"status": "error", "reason": str(e)}
+    
+    def _determine_family_for_coordinate(self, coordinate: str) -> str:
+        """Determine which family a coordinate belongs to."""
+        # Parse coordinate to determine family
+        parts = coordinate.split('.')
+        
+        if coordinate == "0":
+            return "system"  # Root belongs to system family
+        
+        # For coordinates like 0.0.15, check family mappings
+        if len(parts) >= 2:
+            nav_coord = f"{parts[0]}.{parts[1]}"  # e.g., "0.0"
+            for family_name, family_coord in self.family_mappings.items():
+                if family_coord == nav_coord:
+                    return family_name
+        
+        # If it's a semantic coordinate like "system.meta.15", use the first part
+        if not parts[0].isdigit():
+            return parts[0]
+        
+        # Default to system for numeric coordinates
+        return "system"
+    
+    def _coordinate_to_family_node_id(self, coordinate: str, family_name: str) -> str:
+        """Convert coordinate back to family-relative node ID."""
+        parts = coordinate.split('.')
+        
+        # If it's already semantic, use as-is
+        if not parts[0].isdigit():
+            return coordinate
+        
+        # For numeric coordinates like 0.0.15, convert to family.subnode format
+        if len(parts) > 2:
+            # Convert 0.0.15 to system.15 (remove nav coordinate prefix)
+            relative_parts = parts[2:]  # Skip "0.0"
+            return f"{family_name}.{'.'.join(relative_parts)}"
+        else:
+            # Root family node
+            return family_name
+    
+    def _meta_show_config_paths(self, final_args: dict) -> tuple:
+        """Display paths to all active configuration files organized by type."""
+        import os
+        
+        heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR')
+        version = self._get_safe_version()
+        
+        config_paths = {
+            "heaven_data_dir": heaven_data_dir,
+            "app_data_directory": None,
+            "configs": {},
+            "families": {},
+            "shortcuts": {},
+            "data_directory": None
+        }
+        
+        if heaven_data_dir:
+            app_data_dir = os.path.join(heaven_data_dir, f"{self.app_id}_{version}")
+            config_paths["app_data_directory"] = app_data_dir
+            config_paths["data_directory"] = os.path.join(app_data_dir, "data")
+            
+            # Check main config files
+            config_files = ["zone_config.json", "nav_config.json", "base_default_config_v2.json"]
+            for config_file in config_files:
+                user_path = os.path.join(app_data_dir, "configs", config_file)
+                library_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", config_file)
+                
+                config_paths["configs"][config_file] = {
+                    "active_path": user_path if os.path.exists(user_path) else library_path,
+                    "user_path": user_path,
+                    "library_path": library_path,
+                    "using_user_config": os.path.exists(user_path)
+                }
+            
+            # Check family files
+            families_dir = os.path.join(app_data_dir, "configs", "families")
+            library_families_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs", "families")
+            
+            if os.path.exists(families_dir):
+                for family_file in os.listdir(families_dir):
+                    if family_file.endswith("_family.json"):
+                        user_family_path = os.path.join(families_dir, family_file)
+                        library_family_path = os.path.join(library_families_dir, family_file)
+                        
+                        config_paths["families"][family_file] = {
+                            "active_path": user_family_path,
+                            "user_path": user_family_path,
+                            "library_path": library_family_path,
+                            "using_user_config": True
+                        }
+            
+            # Add any library families not in user directory
+            if os.path.exists(library_families_dir):
+                for family_file in os.listdir(library_families_dir):
+                    if family_file.endswith("_family.json") and family_file not in config_paths["families"]:
+                        library_family_path = os.path.join(library_families_dir, family_file)
+                        user_family_path = os.path.join(families_dir, family_file)
+                        
+                        config_paths["families"][family_file] = {
+                            "active_path": library_family_path,
+                            "user_path": user_family_path,
+                            "library_path": library_family_path,
+                            "using_user_config": False
+                        }
+            
+            # Check shortcuts
+            shortcuts_dir = os.path.join(app_data_dir, "shortcuts")
+            if os.path.exists(shortcuts_dir):
+                for shortcut_file in os.listdir(shortcuts_dir):
+                    if shortcut_file.endswith(".json"):
+                        config_paths["shortcuts"][shortcut_file] = os.path.join(shortcuts_dir, shortcut_file)
+        
+        else:
+            # No HEAVEN_DATA_DIR - using library defaults only
+            library_configs_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "configs")
+            
+            config_files = ["zone_config.json", "nav_config.json", "base_default_config_v2.json"]
+            for config_file in config_files:
+                library_path = os.path.join(library_configs_dir, config_file)
+                config_paths["configs"][config_file] = {
+                    "active_path": library_path,
+                    "user_path": "N/A (HEAVEN_DATA_DIR not set)",
+                    "library_path": library_path,
+                    "using_user_config": False
+                }
+        
+        result = {
+            "config_paths": config_paths,
+            "summary": {
+                "heaven_data_dir_set": heaven_data_dir is not None,
+                "total_configs": len(config_paths["configs"]),
+                "total_families": len(config_paths["families"]),
+                "total_shortcuts": len(config_paths["shortcuts"]),
+                "using_user_configs": any(c["using_user_config"] for c in config_paths["configs"].values()) if config_paths["configs"] else False
+            }
+        }
+        
         return result, True
     
     # === MCP Generator Operations ===

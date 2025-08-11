@@ -1,0 +1,8 @@
+{
+  "app_id": "base_treeshell",
+  "domain": "system",
+  "role": "assistant",
+  "about_app": "Base TreeShell system configuration",
+  "about_domain": "Core system operations and management",
+  "system_family": "system"
+}

@@ -1,0 +1,29 @@
+{
+  "nav_tree_order": [
+    "system",
+    "agent_management", 
+    "conversations",
+    "workflows",
+    "development"
+  ],
+  "coordinate_mapping": {
+    "0.0": "system",
+    "0.1": "agent_management", 
+    "0.2": "conversations",
+    "0.3": "workflows",
+    "0.4": "development"
+  },
+  "family_priorities": {
+    "system": 1,
+    "agent_management": 2,
+    "conversations": 3,
+    "workflows": 4,
+    "development": 5
+  },
+  "description": "Navigation configuration for family-based addressing system",
+  "version": "1.0",
+  "legacy_mappings": {
+    "0.3": "agent_management",
+    "0.4": "conversations"
+  }
+}

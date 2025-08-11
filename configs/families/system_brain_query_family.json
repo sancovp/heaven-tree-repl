@@ -1,0 +1,56 @@
+{
+  "family_root": "system_brain_query",
+  "domain": "system_brain_query",
+  "description": "Query knowledge brains for instructions (iterative deepening supported)",
+  "nodes": {
+    "system_brain_query": {
+      "type": "Menu",
+      "prompt": "🤖 Brain Agent Query",
+      "description": "Query knowledge brains for instructions (iterative deepening supported)",
+      "signature": "brain_agent_query() -> query_options"
+    },
+    "system_brain_query.1": {
+      "type": "Callable",
+      "prompt": "Fresh Query",
+      "description": "Start new query to a knowledge brain",
+      "signature": "fresh_query(brain_name: str, query: str) -> dict",
+      "function_name": "_brain_agent_fresh_query",
+      "is_async": true,
+      "args_schema": {
+        "brain_name": "str",
+        "query": "str"
+      }
+    },
+    "system_brain_query.2": {
+      "type": "Callable",
+      "prompt": "Deepen Query",
+      "description": "Deepen previous query for more detailed understanding",
+      "signature": "deepen_query(previous_answer: str, original_query: str) -> dict",
+      "function_name": "_brain_agent_deepen_query",
+      "is_async": true,
+      "args_schema": {
+        "previous_answer": "str",
+        "original_query": "str"
+      }
+    },
+    "system_brain_query.3": {
+      "type": "Callable",
+      "prompt": "Continue Conversation",
+      "description": "Continue brain agent conversation with follow-up",
+      "signature": "continue_conversation(brain_name: str, follow_up: str) -> dict",
+      "function_name": "_brain_agent_continue",
+      "is_async": true,
+      "args_schema": {
+        "brain_name": "str",
+        "follow_up": "str"
+      }
+    },
+    "system_brain_query.4": {
+      "type": "Callable",
+      "prompt": "Show Conversation History",
+      "description": "Display brain agent conversation history",
+      "signature": "show_history() -> dict",
+      "function_name": "_brain_agent_show_history"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "family_root": "system_treeshell_tool",
+  "domain": "system_treeshell_tool",
+  "description": "Generate HEAVEN agent tool from TreeShell class",
+  "nodes": {
+    "system_treeshell_tool": {
+      "type": "Callable",
+      "prompt": "🔧 Generate TreeShell Tool",
+      "description": "Generate HEAVEN agent tool from TreeShell class",
+      "signature": "generate_tool(import_string: str, class_name: str, domain?: str, description?: str) -> tool_path",
+      "function_name": "_generate_treeshell_tool",
+      "args_schema": {
+        "import_string": "str",
+        "class_name": "str",
+        "domain": "str",
+        "description": "str"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "family_root": "system_shortcuts",
+  "domain": "system_shortcuts",
+  "description": "Show all active shortcuts with details and usage",
+  "nodes": {
+    "system_shortcuts": {
+      "type": "Callable",
+      "prompt": "📋 List Shortcuts",
+      "description": "Show all active shortcuts with details and usage",
+      "signature": "list_shortcuts() -> dict",
+      "function_name": "_meta_list_shortcuts"
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "family_root": "system_brain_management",
+  "domain": "system_brain_management", 
+  "description": "Create and manage knowledge brains",
+  "nodes": {
+    "system_brain_management": {
+      "type": "Menu",
+      "prompt": "🧠 Brain Management",
+      "description": "Create and manage knowledge brains",
+      "signature": "brain_management() -> brain_options"
+    },
+    "system_brain_management.1": {
+      "type": "Callable",
+      "prompt": "Setup System Brains",
+      "description": "Auto-register core knowledge bases (Local HEAVEN data + TreeShell source)",
+      "signature": "setup_system_brains() -> dict",
+      "function_name": "_brain_setup_system_brains"
+    },
+    "system_brain_management.2": {
+      "type": "Callable",
+      "prompt": "Create Brain from GitHub",
+      "description": "Clone GitHub repository and register as brain",
+      "signature": "create_brain_from_github(github_url: str, brain_name: str) -> dict",
+      "function_name": "_brain_create_from_github",
+      "args_schema": {
+        "github_url": "str",
+        "brain_name": "str"
+      }
+    },
+    "system_brain_management.3": {
+      "type": "Callable",
+      "prompt": "Register Local Directory",
+      "description": "Register local directory as knowledge brain",
+      "signature": "register_local_brain(directory_path: str, brain_name: str) -> dict",
+      "function_name": "_brain_register_local",
+      "args_schema": {
+        "directory_path": "str",
+        "brain_name": "str"
+      }
+    },
+    "system_brain_management.4": {
+      "type": "Callable",
+      "prompt": "List All Brains",
+      "description": "Show all registered knowledge brains",
+      "signature": "list_brains() -> dict",
+      "function_name": "_brain_list_all"
+    },
+    "system_brain_management.5": {
+      "type": "Callable",
+      "prompt": "Remove Brain",
+      "description": "Remove brain from registry",
+      "signature": "remove_brain(brain_name: str) -> dict",
+      "function_name": "_brain_remove",
+      "args_schema": {
+        "brain_name": "str"
+      }
+    }
+  }
+}

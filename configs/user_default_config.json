@@ -1,10 +1,59 @@
 {
   "app_id": "user_interface_hub",
-  "domain": "user_management",
+  "domain": "user_management", 
   "role": "AI Automation Emergence Engineer",
   "about_app": "Default user interface with agent management and conversation capabilities",
   "about_domain": "Human interface for managing AI agents, workflows, and conversations",
+  "game_config": {
+    "title": "Sanctuary Revolution",
+    "subtitle": "The AI Ascension Chronicles",
+    "default_zone": "crystal_forest"
+  },
+  "zone_map": {
+    "crystal_forest": {
+      "name": "Crystal Forest",
+      "description": "Where nascent intelligences awaken and learn to orchestrate",
+      "families": ["agent_management", "conversations"],
+      "is_hub": true
+    },
+    "silicon_valley": {
+      "name": "Silicon Valley of Broken Dreams", 
+      "description": "Battle legacy code monsters and technical debt",
+      "families": ["development", "debugging"],
+      "unlock_requirement": null
+    }
+  },
   "nodes": {
+    "0.sanctuary_revolution": {
+      "type": "Menu",
+      "prompt": "🌟 Sanctuary Revolution - Zone Selection 🌟", 
+      "description": "Choose your realm of operation in the AI Ascension Chronicles",
+      "signature": "zone_selection() -> zone_options",
+      "options": {
+        "1": "0.crystal_forest",
+        "2": "0.silicon_valley" 
+      }
+    },
+    "0.crystal_forest": {
+      "type": "Menu",
+      "prompt": "🌲 Crystal Forest - Tutorial Grounds 🌲",
+      "description": "Where nascent intelligences awaken and learn to orchestrate their first commands",
+      "signature": "crystal_forest_hub() -> hub_options", 
+      "options": {
+        "1": "0.sanctuary_revolution",
+        "2": "0.3",
+        "3": "0.4"
+      }
+    },
+    "0.silicon_valley": {
+      "type": "Menu", 
+      "prompt": "🏭 Silicon Valley of Broken Dreams 🏭",
+      "description": "Battle legacy code monsters and technical debt beasts",
+      "signature": "silicon_valley() -> development_options",
+      "options": {
+        "1": "0.sanctuary_revolution"
+      }
+    },
     "0.3": {
       "type": "Menu",
       "domain": "agent_management",

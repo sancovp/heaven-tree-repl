@@ -99,6 +99,9 @@ class DisplayBrief(BaseModel):
 🌐 About {{ domain }}: {{ about_domain }}"""
     game_name: str = "Groundhog Day Crystal Forest"
     
+    # Zone configuration for dynamic game data
+    zone_config: Optional[Dict[str, Any]] = None
+    
     # Game state (computed from TreeShell)
     shortcuts: Optional[Dict[str, Any]] = None
     analytics_coord: str = "0.6.4"  # Linguistic structure stats
@@ -140,7 +143,12 @@ class DisplayBrief(BaseModel):
         
         tier_info = f"{tier} (show analytics at {self.analytics_coord})"
         
-        return self.game_template.replace("{{ game_name }}", self.game_name) \
+        # Use dynamic game name from zone_config if available
+        dynamic_game_name = self.game_name  # Default fallback
+        if self.zone_config and "game_config" in self.zone_config:
+            dynamic_game_name = self.zone_config["game_config"].get("title", self.game_name)
+        
+        return self.game_template.replace("{{ game_name }}", dynamic_game_name) \
                                 .replace("{{ tier_info }}", tier_info) \
                                 .replace("{{ level }}", str(level)) \
                                 .replace("{{ role }}", role) \

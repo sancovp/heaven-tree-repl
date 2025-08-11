@@ -1,0 +1,56 @@
+{
+  "family_root": "system_mcp_generator",
+  "domain": "system_mcp_generator",
+  "description": "Generate MCP servers from TreeShell applications",
+  "nodes": {
+    "system_mcp_generator": {
+      "type": "Menu",
+      "prompt": "🚀 MCP Server Generator",
+      "description": "Generate MCP servers from TreeShell applications",
+      "signature": "mcp_generator() -> generation_options"
+    },
+    "system_mcp_generator.1": {
+      "type": "Callable",
+      "prompt": "Initialize MCP Config",
+      "description": "Create new MCP server configuration",
+      "signature": "init_mcp_config(app_name: str, import_path: str, factory_function: str, description: str) -> dict",
+      "function_name": "_meta_init_mcp_config",
+      "args_schema": {
+        "app_name": "str",
+        "import_path": "str",
+        "factory_function": "str",
+        "description": "str"
+      }
+    },
+    "system_mcp_generator.2": {
+      "type": "Callable",
+      "prompt": "Show MCP Config",
+      "description": "Display current MCP server configuration",
+      "signature": "show_mcp_config() -> dict",
+      "function_name": "_meta_show_mcp_config"
+    },
+    "system_mcp_generator.3": {
+      "type": "Callable",
+      "prompt": "Update MCP Config",
+      "description": "Modify MCP server configuration settings",
+      "signature": "update_mcp_config(updates: dict) -> dict",
+      "function_name": "_meta_update_mcp_config",
+      "args_schema": {"updates": "dict"}
+    },
+    "system_mcp_generator.4": {
+      "type": "Callable",
+      "prompt": "Generate MCP Server",
+      "description": "Create complete MCP server package",
+      "signature": "generate_mcp_server(output_dir: str) -> dict",
+      "function_name": "_meta_generate_mcp_server",
+      "args_schema": {"output_dir": "str"}
+    },
+    "system_mcp_generator.5": {
+      "type": "Callable",
+      "prompt": "Get Example Config",
+      "description": "Show example MCP configuration format",
+      "signature": "get_mcp_example_config() -> dict",
+      "function_name": "_meta_get_mcp_example_config"
+    }
+  }
+}

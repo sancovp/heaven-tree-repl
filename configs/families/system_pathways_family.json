@@ -1,0 +1,15 @@
+{
+  "family_root": "system_pathways",
+  "domain": "system_pathways",
+  "description": "View and manage saved pathways",
+  "nodes": {
+    "system_pathways": {
+      "type": "Callable",
+      "prompt": "Manage Pathways",
+      "description": "View and manage saved pathways",
+      "signature": "manage_pathways() -> pathway_list",
+      "function_name": "_manage_pathways",
+      "legacy_coordinate": "0.0.1"
+    }
+  }
+}
