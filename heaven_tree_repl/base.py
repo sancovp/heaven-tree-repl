@@ -244,9 +244,9 @@ class TreeShellBase:
             # 1. Primary semantic address (from JSON)
             address_lookup[node_id] = processed_node
             
-            # 2. Legacy coordinate if specified
-            if "legacy_coordinate" in node_data:
-                address_lookup[node_data["legacy_coordinate"]] = processed_node
+            # 2. Legacy coordinate if specified (DISABLED - using semantic IDs only)
+            # if "legacy_coordinate" in node_data:
+            #     address_lookup[node_data["legacy_coordinate"]] = processed_node
             
             # 3. Nav coordinate for nav families only
             if has_nav_coord:

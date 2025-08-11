@@ -1,0 +1,42 @@
+{
+  "family_root": "agent_management_equipment_system_provider",
+  "domain": "agent_management",
+  "description": "Family for 🤖 Provider",
+  "nodes": {
+    "agent_management_equipment_system_provider": {
+      "id": "agent_management_equipment_system_provider",
+      "title": "🤖 Provider",
+      "description": "Manage AI provider",
+      "type": "Menu",
+      "options": {
+        "1": "equip",
+        "2": "unequip"
+      }
+    },
+    "equip": {
+      "id": "agent_management_equipment_system_provider_equip",
+      "title": "Equip Provider",
+      "description": "Set AI provider (anthropic, openai, google)",
+      "type": "Callable",
+      "callable": {
+        "function_name": "equip_provider",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "equip_provider",
+        "args_schema": {
+          "provider": "str"
+        }
+      }
+    },
+    "unequip": {
+      "id": "agent_management_equipment_system_provider_unequip",
+      "title": "Unequip Provider",
+      "description": "Remove current provider",
+      "type": "Callable",
+      "callable": {
+        "function_name": "unequip_provider",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "unequip_provider"
+      }
+    }
+  }
+}

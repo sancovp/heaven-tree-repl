@@ -1,0 +1,17 @@
+{
+  "family_root": "agent_management_equipment",
+  "domain": "agent_management",
+  "description": "Family for 🤖 Agent Management",
+  "nodes": {
+    "agent_management_equipment": {
+      "id": "agent_management_equipment",
+      "title": "🤖 Agent Management",
+      "description": "Configure and manage AI agents",
+      "type": "Menu",
+      "options": {
+        "1": "config",
+        "2": "utils"
+      }
+    }
+  }
+}

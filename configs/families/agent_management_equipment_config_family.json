@@ -1,0 +1,57 @@
+{
+  "family_root": "agent_management_equipment_config",
+  "domain": "agent_management",
+  "description": "Family for 💾 Config Management",
+  "nodes": {
+    "agent_management_equipment_config": {
+      "id": "agent_management_equipment_config",
+      "title": "💾 Config Management",
+      "description": "Save and load agent configurations",
+      "type": "Menu",
+      "options": {
+        "1": "list",
+        "2": "save",
+        "3": "copy"
+      }
+    },
+    "list": {
+      "id": "agent_management_equipment_config_list",
+      "title": "List Saved Configs",
+      "description": "Show all saved configurations",
+      "type": "Callable",
+      "callable": {
+        "function_name": "list_saved_configs",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "list_saved_configs"
+      }
+    },
+    "save": {
+      "id": "agent_management_equipment_config_save",
+      "title": "Save Config As",
+      "description": "Save current config to file",
+      "type": "Callable",
+      "callable": {
+        "function_name": "save_config_as",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "save_config_as",
+        "args_schema": {
+          "name": "str"
+        }
+      }
+    },
+    "copy": {
+      "id": "agent_management_equipment_config_copy",
+      "title": "Copy Existing",
+      "description": "Load existing config into dynamic config",
+      "type": "Callable",
+      "callable": {
+        "function_name": "copy_existing",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "copy_existing",
+        "args_schema": {
+          "name": "str"
+        }
+      }
+    }
+  }
+}
