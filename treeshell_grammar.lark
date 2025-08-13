@@ -16,6 +16,8 @@ simple_command: "jump" target args?            -> jump_command
               | "exit"                         -> exit_command
               | "nav"                          -> nav_command
               | "lang"                         -> lang_command
+              | target ".exec" args?           -> exec_command
+              | target ".exec()"               -> exec_command_parens
               | SHORTCUT args?                 -> shortcut_exec
               | NUMBER args?                   -> number_selection
 

@@ -23,9 +23,6 @@ class CommandHandlersMixin:
         """
         original_target = target_coord
         
-        # Skip resolution for numeric coordinates (legacy system)
-        if target_coord[0].isdigit():
-            return target_coord
         
         # Check existing shortcuts first
         shortcuts = self.session_vars.get("_shortcuts", {})

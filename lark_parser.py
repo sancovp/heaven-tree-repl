@@ -202,6 +202,22 @@ class TreeShellTransformer(Transformer):
         }
     
     @v_args(inline=True)
+    def exec_command(self, target, args=None):
+        return {
+            "type": "exec_command",
+            "target": target,
+            "args": args or {"type": "json", "value": {}}
+        }
+    
+    @v_args(inline=True)
+    def exec_command_parens(self, target):
+        return {
+            "type": "exec_command",
+            "target": target,
+            "args": {"type": "json", "value": {}}
+        }
+    
+    @v_args(inline=True)
     def jump_shortcut(self, alias, target):
         return {
             "type": "shortcut_definition",
@@ -266,9 +282,21 @@ class LarkTreeShellParser:
         try:
             tree = self.parser.parse(command_str.strip())
             result = self.transformer.transform(tree)
+            
+            # Extract the actual command from the tree structure
+            if hasattr(result, 'children') and result.children:
+                # Navigate: start -> command -> actual_command
+                command_tree = result.children[0]
+                if hasattr(command_tree, 'children') and command_tree.children:
+                    actual_result = command_tree.children[0]
+                else:
+                    actual_result = result
+            else:
+                actual_result = result
+            
             return {
                 "success": True,
-                "ast": result,
+                "ast": actual_result,
                 "original": command_str
             }
         except LarkError as e:
@@ -438,6 +466,18 @@ class LarkTreeShellParser:
             
         elif node_type == "chain":
             self._ast_to_plan(node["expression"], plan)
+            
+        elif node_type == "exec_command":
+            target = node["target"]
+            args = node["args"]
+            
+            plan.append({
+                "type": "exec_execution",
+                "target": target["value"],
+                "target_type": target["type"],
+                "args": args["value"] if args["type"] == "json" else args["value"],
+                "args_type": args["type"]
+            })
 
 
 def create_lark_parser() -> Optional[LarkTreeShellParser]:

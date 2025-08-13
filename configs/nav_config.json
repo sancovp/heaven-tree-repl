@@ -7,11 +7,11 @@
     "development"
   ],
   "coordinate_mapping": {
-    "0.0": "system",
-    "0.1": "agent_management", 
-    "0.2": "conversations",
-    "0.3": "workflows",
-    "0.4": "development"
+    "0.1": "system",
+    "0.2": "agent_management", 
+    "0.3": "conversations",
+    "0.4": "workflows",
+    "0.5": "development"
   },
   "family_priorities": {
     "system": 1,

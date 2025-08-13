@@ -19,7 +19,8 @@
       "prompt": "List All Tools",
       "description": "Show all available HEAVEN tools",
       "signature": "list_tools() -> dict",
-      "function_name": "_omni_list_tools"
+      "function_name": "_omni_list_tools",
+      "is_async": true
     },
     "get_tool_info": {
       "type": "Callable",
@@ -27,6 +28,7 @@
       "description": "Get detailed information about a specific tool",
       "signature": "get_tool_info(tool_name: str) -> dict",
       "function_name": "_omni_get_tool_info",
+      "is_async": true,
       "args_schema": {
         "tool_name": "str"
       }
@@ -37,6 +39,7 @@
       "description": "Execute a HEAVEN tool with parameters",
       "signature": "execute_tool(tool_name: str, parameters: dict) -> dict",
       "function_name": "_omni_execute_tool",
+      "is_async": true,
       "args_schema": {
         "tool_name": "str",
         "parameters": "dict"

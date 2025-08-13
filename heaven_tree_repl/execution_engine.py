@@ -97,19 +97,31 @@ class ExecutionEngineMixin:
         if args is None:
             args = {}
             
-        node = self.nodes.get(node_coord)
-        if not node and hasattr(self, 'legacy_nodes'):
-            node = self.legacy_nodes.get(node_coord)
+        # Resolve coordinate using semantic address resolution
+        resolved_coord = self._resolve_semantic_address(node_coord)
+        
+        # Check combo_nodes first (contains all possible address combinations)
+        node = None
+        if hasattr(self, 'combo_nodes'):
+            node = self.combo_nodes.get(resolved_coord)
+        
+        # Fallback to individual collections if combo_nodes doesn't exist
         if not node:
-            return {"error": f"Node {node_coord} not found"}, False
+            node = self.nodes.get(resolved_coord)
+        if not node and hasattr(self, 'numeric_nodes'):
+            node = self.numeric_nodes.get(resolved_coord)
+        if not node and hasattr(self, 'legacy_nodes'):
+            node = self.legacy_nodes.get(resolved_coord)
+        if not node:
+            return {"error": f"Node {resolved_coord} not found"}, False
             
         # Merge args_schema template with user args, then substitute variables
         args_schema = node.get("args_schema", {})
         merged_args = args.copy()
         
-        # Add any schema args that aren't provided by user
+        # Add any schema args that aren't provided by user (only $variable tokens)
         for key, value in args_schema.items():
-            if key not in merged_args:
+            if isinstance(value, str) and value.startswith("$"):
                 merged_args[key] = value
         
         # Substitute variables in merged arguments
@@ -326,6 +338,27 @@ class ExecutionEngineMixin:
         # Handle numerical menu selection
         if cmd.isdigit():
             return await self._handle_numerical_selection(int(cmd), args_str)
+        
+        # Handle .exec() notation: coordinate.exec or coordinate.exec()
+        if ".exec" in cmd:
+            if cmd.endswith(".exec()"):
+                # coordinate.exec() format
+                coord_part = cmd[:-7]  # Remove ".exec()"
+                exec_args = "{}"  # Empty args for exec()
+            elif cmd.endswith(".exec"):
+                # coordinate.exec format 
+                coord_part = cmd[:-5]  # Remove ".exec"
+                exec_args = args_str if args_str else "{}"
+            else:
+                return {"error": f"Invalid .exec format: {command}"}
+            
+            # Jump to coordinate then execute (like option 1)
+            jump_result = await self._handle_jump(coord_part)
+            if "error" in jump_result:
+                return jump_result
+            
+            # Execute at the new position
+            return await self._handle_numerical_selection(1, exec_args)
             
         # Handle universal commands
         if cmd == "jump":

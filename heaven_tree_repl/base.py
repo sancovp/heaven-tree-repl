@@ -57,6 +57,9 @@ class TreeShellBase:
         # Build clean numeric-only map for nav display
         self.numeric_nodes = self._build_numeric_map()
         
+        # Build combo address mapping for mixed coordinate resolution
+        self.combo_nodes = self._resolve_combo_node_addresses()
+        
         # Navigation state
         self.current_position = "0"
         self.stack = ["0"]
@@ -121,9 +124,9 @@ class TreeShellBase:
                 nav_tree_order.insert(0, "system")
                 # print("Debug: Injected 'system' family at position 0")
             
-            # Build coordinate mappings: position in nav_tree_order maps to 0.X coordinate
+            # Build coordinate mappings: position in nav_tree_order maps to 0.X coordinate (starting from 1)
             for i, family_name in enumerate(nav_tree_order):
-                coordinate = f"0.{i}"
+                coordinate = f"0.{i + 1}"  # Start from 1 to avoid 0.0
                 self.family_mappings[family_name] = coordinate
                 # print(f"Debug: Mapped family '{family_name}' to coordinate '{coordinate}'")
         elif self.nav_config and "coordinate_mapping" in self.nav_config:
@@ -215,8 +218,8 @@ class TreeShellBase:
         
         # Process each node once and create address mappings
         for node_id, node_data in family_nodes.items():
-            # Process the node data once - modify in place to avoid copies
-            processed_node = node_data
+            # Create a copy to avoid mutating the original data
+            processed_node = node_data.copy()
             
             # Override prompt if title exists, otherwise ensure prompt exists
             if "title" in node_data:
@@ -299,7 +302,7 @@ class TreeShellBase:
         # Process each nav group
         for nav_coord, family_list in nav_groups.items():
             # Assign sibling coordinates at NAV-1 level (0.0.0, 0.0.1, 0.0.2, ...)
-            for sibling_index, (family_name, family_config) in enumerate(family_list):
+            for sibling_index, (family_name, family_config) in enumerate(family_list, start=1):
                 family_nodes = family_config.get("nodes", {})
                 node_names = list(family_nodes.keys())
                 
@@ -339,6 +342,27 @@ class TreeShellBase:
                     numeric_nodes[numeric_coord] = processed_node
         
         return numeric_nodes
+
+    def _resolve_combo_node_addresses(self) -> dict:
+        """Build combo address mapping supporting mixed semantic/numeric coordinates.
+        
+        Creates all possible address combinations:
+        - Pure semantic: system_omnitool_list_tools
+        - Pure numeric: 0.0.0.1 
+        - Mixed: 0.0.omnitool.1, 0.system.omnitool.list_tools
+        - Any valid combination of numeric and semantic path components
+        """
+        combo_nodes = {}
+        
+        # Start with both base collections
+        combo_nodes.update(self.nodes)
+        combo_nodes.update(self.numeric_nodes)
+        
+        # TODO: Build mixed combinations
+        # For now, return the union of semantic + numeric
+        # Future: Generate all valid mixed coordinate combinations
+        
+        return combo_nodes
 
     def _load_shortcuts(self) -> None:
         """Load shortcuts from JSON files. Override in subclasses for different layers."""
@@ -696,7 +720,7 @@ class TreeShellBase:
             for i in range(len(parts)):
                 # Build position string for current level (e.g., "0", "0.3", "0.3.1", etc.)
                 level_position = '.'.join(parts[:i+1])
-                node = self.nodes.get(level_position, {})
+                node = self.numeric_nodes.get(level_position, {})
                 
                 # If this node has a domain, add it to the chain
                 if 'domain' in node:
@@ -862,9 +886,6 @@ class TreeShellBase:
         
         Returns: (result_detail_string, success_bool)
         """
-        if node_data.get("type") != "Callable":
-            return "static node", True
-        
         function_name = node_data.get("function_name")
         if not function_name:
             return "callable node without function_name", False
@@ -1107,12 +1128,8 @@ class TreeShellBase:
 
     def _get_node_menu(self, node_coord: str) -> dict:
         """Get menu display for a node."""
-        # Check family nodes first, then numeric nodes, then legacy nodes as fallback
-        node = self.nodes.get(node_coord)
-        if not node and hasattr(self, 'numeric_nodes'):
-            node = self.numeric_nodes.get(node_coord)
-        if not node and hasattr(self, 'legacy_nodes'):
-            node = self.legacy_nodes.get(node_coord)
+        # Use combo_nodes for unified address resolution
+        node = self.combo_nodes.get(node_coord) if hasattr(self, 'combo_nodes') else None
         if not node:
             return {"error": f"Node {node_coord} not found"}
             
@@ -1124,7 +1141,9 @@ class TreeShellBase:
         # Node-specific options
         options = node.get("options", {})
         for i, (key, target) in enumerate(options.items(), start=2):
-            target_node = self.nodes.get(target)
+            # Use combo_nodes for unified address resolution
+            target_node = self.combo_nodes.get(target) if hasattr(self, 'combo_nodes') else None
+            
             if target_node:
                 action_name = target_node.get("prompt", f"Node {target}")
                 menu_options[str(i)] = action_name

@@ -658,6 +658,7 @@ class MetaOperationsMixin:
     
     async def _omni_list_tools(self, final_args: dict) -> tuple:
         """List all available HEAVEN tools through OmniTool."""
+        print(f"DEBUG _omni_list_tools: final_args = {final_args}")
         try:
             # Import OmniTool from HEAVEN framework
             from heaven_base.utils.omnitool import omnitool
