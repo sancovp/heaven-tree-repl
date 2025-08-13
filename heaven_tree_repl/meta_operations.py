@@ -160,6 +160,27 @@ class MetaOperationsMixin:
         
     # === Tree Structure CRUD Operations ===
     
+    def _resolve_coordinate_to_semantic(self, coordinate: str) -> str:
+        """Convert numeric coordinate to semantic name if needed."""
+        if not coordinate:
+            return coordinate
+            
+        # If coordinate is numeric (all digits and dots), try to resolve to semantic
+        if coordinate.replace('.', '').isdigit():
+            if hasattr(self, 'combo_nodes') and coordinate in self.combo_nodes:
+                target_node = self.combo_nodes[coordinate]
+                target_prompt = target_node.get('prompt', target_node.get('title', ''))
+                
+                # Find semantic name with matching prompt/title
+                for addr, node_data in self.combo_nodes.items():
+                    if not addr.replace('.', '').isdigit():  # semantic address
+                        node_prompt = node_data.get('prompt', node_data.get('title', ''))
+                        if target_prompt and target_prompt == node_prompt:
+                            return addr  # Found semantic equivalent
+                        
+        # Return as-is if already semantic or no resolution found
+        return coordinate
+
     def _meta_add_node(self, final_args: dict) -> tuple:
         """Add a new node to the tree structure with multiple callable options."""
         coordinate = final_args.get("coordinate")
@@ -167,6 +188,10 @@ class MetaOperationsMixin:
         
         if not coordinate:
             return {"error": "Node coordinate required"}, False
+            
+        # Resolve numeric coordinates to semantic names before saving
+        original_coordinate = coordinate
+        coordinate = self._resolve_coordinate_to_semantic(coordinate)
         if not node_data or not isinstance(node_data, dict):
             return {"error": "Node data (dict) required"}, False
             

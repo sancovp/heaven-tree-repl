@@ -784,6 +784,27 @@ class CommandHandlersMixin:
             "message": f"Navigation overview: {summary['total_nodes']} total nodes"
         })
     
+    def _resolve_coordinate_to_semantic(self, coordinate: str) -> str:
+        """Convert numeric coordinate to semantic name if needed."""
+        if not coordinate:
+            return coordinate
+            
+        # If coordinate is numeric (all digits and dots), try to resolve to semantic
+        if coordinate.replace('.', '').isdigit():
+            if hasattr(self, 'combo_nodes') and coordinate in self.combo_nodes:
+                target_node = self.combo_nodes[coordinate]
+                target_prompt = target_node.get('prompt', target_node.get('title', ''))
+                
+                # Find semantic name with matching prompt/title
+                for addr, node_data in self.combo_nodes.items():
+                    if not addr.replace('.', '').isdigit():  # semantic address
+                        node_prompt = node_data.get('prompt', node_data.get('title', ''))
+                        if target_prompt and target_prompt == node_prompt:
+                            return addr  # Found semantic equivalent
+                        
+        # Return as-is if already semantic or no resolution found
+        return coordinate
+
     def _handle_shortcut(self, args_str: str) -> dict:
         """Create semantic shortcut for jump commands or chain templates."""
         if not args_str:
@@ -846,12 +867,20 @@ class CommandHandlersMixin:
             
             alias, coordinate = parts
             
-            # Validate coordinate exists
-            if coordinate not in self.nodes:
-                return {"error": f"Coordinate '{coordinate}' not found. Use 'nav' to see all available nodes."}
+            # Resolve numeric coordinates to semantic names before saving
+            original_coordinate = coordinate
+            coordinate = self._resolve_coordinate_to_semantic(coordinate)
             
-            # Get node info for display
-            node = self.nodes[coordinate]
+            # Validate coordinate exists (check combo_nodes for unified lookup)
+            if hasattr(self, 'combo_nodes'):
+                if coordinate not in self.combo_nodes:
+                    return {"error": f"Coordinate '{original_coordinate}' not found. Use 'nav' to see all available nodes."}
+                node = self.combo_nodes[coordinate]
+            else:
+                # Fallback to semantic nodes only
+                if coordinate not in self.nodes:
+                    return {"error": f"Coordinate '{original_coordinate}' not found. Use 'nav' to see all available nodes."}
+                node = self.nodes[coordinate]
             node_prompt = node.get("prompt", "Unknown")
             
             # Initialize shortcuts storage if not exists

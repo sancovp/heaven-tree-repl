@@ -6,5 +6,9 @@
   "navigate": {
     "type": "jump",
     "coordinate": "0"
+  },
+  "test_shortcut": {
+    "type": "jump",
+    "coordinate": "system_omnitool"
   }
 }
