@@ -124,7 +124,8 @@ async def _continue_chat(message: str, agent_config):
         result = await completion_runner(
             state,
             prompt=context_prompt,
-            agent=agent_config
+            agent=agent_config,
+            history_id=latest_history_id
         )
         
         # Extract response and history_id
