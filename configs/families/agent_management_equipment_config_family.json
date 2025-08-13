@@ -1,11 +1,12 @@
 {
   "family_root": "agent_management_equipment_config",
+  "parent": "agent_management_equipment",
   "domain": "agent_management",
-  "description": "Family for 💾 Config Management",
+  "description": "Save and load agent configurations",
   "nodes": {
     "agent_management_equipment_config": {
       "id": "agent_management_equipment_config",
-      "title": "💾 Config Management",
+      "title": "\ud83d\udcbe Config Management",
       "description": "Save and load agent configurations",
       "type": "Menu",
       "options": {

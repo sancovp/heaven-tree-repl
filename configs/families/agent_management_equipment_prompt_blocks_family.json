@@ -1,0 +1,58 @@
+{
+  "family_root": "agent_management_equipment_prompt_blocks",
+  "parent": "agent_management_equipment",
+  "domain": "agent_management",
+  "description": "Manage prompt suffix blocks",
+  "nodes": {
+    "agent_management_equipment_prompt_blocks": {
+      "id": "agent_management_equipment_prompt_blocks",
+      "title": "📦 Prompt Blocks",
+      "description": "Manage prompt suffix blocks",
+      "type": "Menu",
+      "options": {
+        "1": "equip",
+        "2": "unequip",
+        "3": "list"
+      }
+    },
+    "equip": {
+      "id": "agent_management_equipment_prompt_blocks_equip",
+      "title": "Equip Prompt Block",
+      "description": "Add a prompt suffix block",
+      "type": "Callable",
+      "callable": {
+        "function_name": "equip_prompt_block",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "equip_prompt_block",
+        "args_schema": {
+          "block_name": "str"
+        }
+      }
+    },
+    "unequip": {
+      "id": "agent_management_equipment_prompt_blocks_unequip",
+      "title": "Unequip Prompt Block",
+      "description": "Remove a prompt suffix block",
+      "type": "Callable",
+      "callable": {
+        "function_name": "unequip_prompt_block",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "unequip_prompt_block",
+        "args_schema": {
+          "block_name": "str"
+        }
+      }
+    },
+    "list": {
+      "id": "agent_management_equipment_prompt_blocks_list",
+      "title": "List Prompt Blocks",
+      "description": "Show available and equipped prompt blocks",
+      "type": "Callable",
+      "callable": {
+        "function_name": "list_prompt_blocks",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "list_prompt_blocks"
+      }
+    }
+  }
+}

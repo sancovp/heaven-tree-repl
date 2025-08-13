@@ -1,5 +1,6 @@
 {
   "family_root": "development",
+  "parent": null,
   "domain": "development",
   "description": "Development tools and workflows",
   "nodes": {

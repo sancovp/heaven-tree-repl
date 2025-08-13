@@ -1,11 +1,12 @@
 {
   "family_root": "agent_management_approvals",
+  "parent": "agent_management",
   "domain": "agent_management",
-  "description": "Family for ✅ Workflow Approvals",
+  "description": "Review and approve agent-generated workflows",
   "nodes": {
     "agent_management_approvals": {
       "id": "agent_management_approvals",
-      "title": "✅ Workflow Approvals",
+      "title": "\u2705 Workflow Approvals",
       "description": "Review and approve agent-generated workflows",
       "type": "Menu",
       "options": {

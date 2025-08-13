@@ -38,44 +38,30 @@ class TreeShellMCPServer:
         # Initialize the conversation shell
         self.shell = None
     
-    async def _initialize_shell(self):
-        """Initialize the conversation management shell"""
-        try:
-            # Set HEAVEN_DATA_DIR if not set
-            if not os.getenv('HEAVEN_DATA_DIR'):
-                os.environ['HEAVEN_DATA_DIR'] = '/tmp/heaven_data'
-                os.makedirs('/tmp/heaven_data', exist_ok=True)
-            
-            # Create and initialize UserTreeShell using its own main method
-            shell_instance = UserTreeShell({})
-            self.shell = await shell_instance.main()
-            
-        except Exception as e:
-            print(f"Warning: Could not initialize conversation shell: {e}")
-            self.shell = None
-    
     async def run_conversation_shell(self, command: str) -> dict:
         """
         Run a command in the conversation management TreeShell.
-        
-        Args:
-            command: TreeShell command to execute
-            
-        Returns:
-            Dict with command result
+        Uses persistent shell instance with automatic pickle-based state recovery.
         """
+        # Initialize shell if not already created (loads from pickle automatically)  
         if not self.shell:
-            await self._initialize_shell()
-        
-        if not self.shell:
-            return {
-                "success": False,
-                "error": "TreeShell not initialized. Check HEAVEN_DATA_DIR and dependencies."
-            }
+            try:
+                # Set HEAVEN_DATA_DIR if not set
+                if not os.getenv('HEAVEN_DATA_DIR'):
+                    os.environ['HEAVEN_DATA_DIR'] = '/tmp/heaven_data'
+                    os.makedirs('/tmp/heaven_data', exist_ok=True)
+                
+                self.shell = UserTreeShell({})  # This loads from pickle if available
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"TreeShell failed to initialize: {e}"
+                }
         
         try:
-            # Handle command through TreeShell
+            # Use the persistent shell instance
             result = await self.shell.handle_command(command)
+            # Shell auto-saves to pickle after each command
             
             # Render the result using TreeShell's renderer
             rendered_output = render_response(result)

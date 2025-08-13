@@ -1,5 +1,6 @@
 {
   "family_root": "system_brain_query",
+  "parent": "system",
   "domain": "system_brain_query",
   "description": "Query knowledge brains for instructions (iterative deepening supported)",
   "nodes": {

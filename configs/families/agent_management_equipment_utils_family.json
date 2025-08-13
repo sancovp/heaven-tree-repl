@@ -1,11 +1,12 @@
 {
   "family_root": "agent_management_equipment_utils",
+  "parent": "agent_management_equipment",
   "domain": "agent_management",
-  "description": "Family for 🔄 Reset & Utils",
+  "description": "Reset config and utility functions",
   "nodes": {
     "agent_management_equipment_utils": {
       "id": "agent_management_equipment_utils",
-      "title": "🔄 Reset & Utils",
+      "title": "\ud83d\udd04 Reset & Utils",
       "description": "Reset config and utility functions",
       "type": "Menu",
       "options": {

@@ -1,5 +1,6 @@
 {
   "family_root": "workflows",
+  "parent": null,
   "domain": "workflows",
   "description": "Workflow management and orchestration",
   "nodes": {

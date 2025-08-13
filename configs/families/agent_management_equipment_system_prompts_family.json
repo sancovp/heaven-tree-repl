@@ -1,0 +1,53 @@
+{
+  "family_root": "agent_management_equipment_system_prompts",
+  "parent": "agent_management_equipment",
+  "domain": "agent_management",
+  "description": "Manage system prompts",
+  "nodes": {
+    "agent_management_equipment_system_prompts": {
+      "id": "agent_management_equipment_system_prompts",
+      "title": "📝 System Prompts",
+      "description": "Manage system prompts",
+      "type": "Menu",
+      "options": {
+        "1": "equip",
+        "2": "unequip",
+        "3": "list"
+      }
+    },
+    "equip": {
+      "id": "agent_management_equipment_system_prompts_equip",
+      "title": "Equip System Prompt",
+      "description": "Add or replace system prompt",
+      "type": "Callable",
+      "callable": {
+        "function_name": "equip_system_prompt",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "equip_system_prompt",
+        "args_schema": {}
+      }
+    },
+    "unequip": {
+      "id": "agent_management_equipment_system_prompts_unequip",
+      "title": "Unequip System Prompt",
+      "description": "Remove current system prompt",
+      "type": "Callable",
+      "callable": {
+        "function_name": "unequip_system_prompt",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "unequip_system_prompt"
+      }
+    },
+    "list": {
+      "id": "agent_management_equipment_system_prompts_list",
+      "title": "List System Prompts",
+      "description": "Show current system prompt",
+      "type": "Callable",
+      "callable": {
+        "function_name": "list_system_prompts",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "list_system_prompts"
+      }
+    }
+  }
+}

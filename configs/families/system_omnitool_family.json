@@ -1,5 +1,6 @@
 {
   "family_root": "system_omnitool",
+  "parent": "system",
   "domain": "system_omnitool",
   "description": "Access to HEAVEN's 96+ tool ecosystem",
   "nodes": {

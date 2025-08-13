@@ -799,6 +799,13 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
         
         TreeShell.__init__(self, final_config)
         self.__init_agent_features__(session_id, approval_callback)
+        
+        # Store session_id for saving state
+        self.session_id = session_id
+        
+        # Load previous session state for agent shell
+        if session_id:
+            self._load_session_state(session_id)
     
     @staticmethod
     def _static_load_config(filename: str) -> dict:
@@ -844,9 +851,16 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
         """Save shortcut to agent_shortcuts.json for agent-specific shortcuts."""
         self._save_shortcut_to_specific_file(alias, shortcut_data, "system_agent_shortcuts.json")
     
-    def handle_command(self, command: str) -> dict:
-        """Override to use agent command handling."""
-        return self.handle_command_agent(command)
+    async def handle_command(self, command: str) -> dict:
+        """Override to add session persistence for agent shell."""
+        # Call agent command handling
+        result = await self.handle_command_agent(command)
+        
+        # Save session state after every command (with session_id)
+        if hasattr(self, 'session_id') and self.session_id:
+            self._save_session_state(self.session_id)
+        
+        return result
 
 
 class UserTreeShell(TreeShell, UserTreeReplMixin):
@@ -869,6 +883,9 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
         # Initialize with family-based config (TreeShellBase will handle family loading)
         TreeShell.__init__(self, final_config)
         self.__init_user_features__(parent_approval_callback)
+        
+        # Load previous session state for user shell
+        self._load_session_state()
     
     @staticmethod
     def _static_load_config(filename: str) -> dict:
@@ -913,6 +930,16 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
         """Save shortcut to user_shortcuts.json for user-specific shortcuts."""
         self._save_shortcut_to_specific_file(alias, shortcut_data, "system_user_shortcuts.json")
+    
+    async def handle_command(self, command: str) -> dict:
+        """Override to add session persistence for user shell."""
+        # Call parent handle_command
+        result = await super().handle_command(command)
+        
+        # Save session state after every command
+        self._save_session_state()
+        
+        return result
 
 
 class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):

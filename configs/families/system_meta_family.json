@@ -1,5 +1,6 @@
 {
   "family_root": "system_meta",
+  "parent": "system",
   "domain": "system_meta",
   "description": "State management and session operations",
   "nodes": {

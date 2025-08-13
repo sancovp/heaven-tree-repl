@@ -1,5 +1,6 @@
 {
   "family_root": "system_documentation",
+  "parent": "system",
   "domain": "system_documentation",
   "description": "TreeShell documentation and command reference. To read a section, use the number + {} (e.g., '2 {}' to read Execution Syntax). Each section contains detailed guides and examples.",
   "nodes": {

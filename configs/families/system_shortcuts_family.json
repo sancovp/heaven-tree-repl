@@ -1,5 +1,6 @@
 {
   "family_root": "system_shortcuts",
+  "parent": "system",
   "domain": "system_shortcuts",
   "description": "Show all active shortcuts with details and usage",
   "nodes": {

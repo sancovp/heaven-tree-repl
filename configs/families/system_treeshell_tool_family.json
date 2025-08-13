@@ -1,5 +1,6 @@
 {
   "family_root": "system_treeshell_tool",
+  "parent": "system",
   "domain": "system_treeshell_tool",
   "description": "Generate HEAVEN agent tool from TreeShell class",
   "nodes": {

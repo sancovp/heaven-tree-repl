@@ -1,5 +1,6 @@
 {
   "family_root": "system_pathways",
+  "parent": "system",
   "domain": "system_pathways",
   "description": "View and manage saved pathways",
   "nodes": {

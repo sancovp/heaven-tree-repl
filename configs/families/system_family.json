@@ -1,5 +1,6 @@
 {
   "family_root": "system",
+  "parent": null,
   "domain": "system",
   "description": "System configuration and pathway management", 
   "nodes": {

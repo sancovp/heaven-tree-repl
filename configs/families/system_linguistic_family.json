@@ -1,5 +1,6 @@
 {
   "family_root": "system_linguistic",
+  "parent": "system",
   "domain": "system_linguistic",
   "description": "Hierarchy tracking: Word \u2192 Sentence \u2192 Paragraph \u2192 Page \u2192 Chapter \u2192 Book \u2192 Volume",
   "nodes": {

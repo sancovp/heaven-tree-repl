@@ -1,0 +1,58 @@
+{
+  "family_root": "agent_management_equipment_tools",
+  "parent": "agent_management_equipment",
+  "domain": "agent_management",
+  "description": "Manage agent tools",
+  "nodes": {
+    "agent_management_equipment_tools": {
+      "id": "agent_management_equipment_tools",
+      "title": "🛠️ Tools",
+      "description": "Manage agent tools",
+      "type": "Menu",
+      "options": {
+        "1": "equip",
+        "2": "unequip",
+        "3": "list"
+      }
+    },
+    "equip": {
+      "id": "agent_management_equipment_tools_equip",
+      "title": "Equip Tool",
+      "description": "Add a tool to the agent",
+      "type": "Callable",
+      "callable": {
+        "function_name": "equip_tool",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "equip_tool",
+        "args_schema": {
+          "tool_name": "str"
+        }
+      }
+    },
+    "unequip": {
+      "id": "agent_management_equipment_tools_unequip",
+      "title": "Unequip Tool",
+      "description": "Remove a tool from the agent",
+      "type": "Callable",
+      "callable": {
+        "function_name": "unequip_tool",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "unequip_tool",
+        "args_schema": {
+          "tool_name": "str"
+        }
+      }
+    },
+    "list": {
+      "id": "agent_management_equipment_tools_list",
+      "title": "List Tools",
+      "description": "Show available and equipped tools",
+      "type": "Callable",
+      "callable": {
+        "function_name": "list_tools",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "list_tools"
+      }
+    }
+  }
+}

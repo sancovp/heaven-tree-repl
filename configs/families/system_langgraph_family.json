@@ -1,5 +1,6 @@
 {
   "family_root": "system_langgraph",
+  "parent": "system",
   "domain": "system_langgraph",
   "description": "LangGraph node execution and workflow construction",
   "nodes": {

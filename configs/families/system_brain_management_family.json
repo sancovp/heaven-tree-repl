@@ -1,5 +1,6 @@
 {
   "family_root": "system_brain_management",
+  "parent": "system",
   "domain": "system_brain_management",
   "description": "Create and manage knowledge brains",
   "nodes": {

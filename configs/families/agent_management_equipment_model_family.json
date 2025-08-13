@@ -1,0 +1,55 @@
+{
+  "family_root": "agent_management_equipment_model",
+  "parent": "agent_management_equipment",
+  "domain": "agent_management",
+  "description": "Manage AI model",
+  "nodes": {
+    "agent_management_equipment_model": {
+      "id": "agent_management_equipment_model",
+      "title": "🧠 Model",
+      "description": "Manage AI model",
+      "type": "Menu",
+      "options": {
+        "1": "equip",
+        "2": "unequip",
+        "3": "list"
+      }
+    },
+    "equip": {
+      "id": "agent_management_equipment_model_equip",
+      "title": "Equip Model",
+      "description": "Set AI model",
+      "type": "Callable",
+      "callable": {
+        "function_name": "equip_model",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "equip_model",
+        "args_schema": {
+          "model": "str"
+        }
+      }
+    },
+    "unequip": {
+      "id": "agent_management_equipment_model_unequip",
+      "title": "Unequip Model",
+      "description": "Remove current model",
+      "type": "Callable",
+      "callable": {
+        "function_name": "unequip_model",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "unequip_model"
+      }
+    },
+    "list": {
+      "id": "agent_management_equipment_model_list",
+      "title": "List Models",
+      "description": "Show available models for current provider",
+      "type": "Callable",
+      "callable": {
+        "function_name": "list_models",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "list_models"
+      }
+    }
+  }
+}

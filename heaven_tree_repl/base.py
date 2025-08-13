@@ -7,6 +7,7 @@ import json
 import datetime
 import copy
 import uuid
+import os
 from typing import Dict, List, Any, Optional, Tuple
 
 
@@ -196,25 +197,37 @@ class TreeShellBase:
         
         return families
     
+    def _resolve_family_nav_coordinate(self, family_name: str, family_config: dict, all_families: dict = None) -> str:
+        """Resolve nav coordinate for family using parent chain traversal."""
+        # First check if this family is directly in nav config
+        nav_coord = self.family_mappings.get(family_name)
+        if nav_coord:
+            return nav_coord
+        
+        # Check if family has explicit parent field
+        parent = family_config.get("parent")
+        if parent is None:
+            # No parent = top-level family, should be in nav_config
+            # If not found, return family_name for semantic space
+            return family_name
+        
+        if parent and all_families and parent in all_families:
+            # Recursively resolve parent coordinate
+            parent_config = all_families[parent]
+            parent_coord = self._resolve_family_nav_coordinate(parent, parent_config, all_families)
+            return parent_coord
+        
+        # Fallback: family exists in semantic space only
+        return family_name
+    
     def _convert_family_to_coordinates(self, family_config: dict, family_name: str, all_families: dict = None) -> dict:
         """Build address lookup for family nodes without duplicating data."""
         address_lookup = {}
         family_nodes = family_config.get("nodes", {})
         
-        # Get the nav coordinate for this family, with automatic rollup for sub-families
-        nav_coord = self.family_mappings.get(family_name)
-        has_nav_coord = bool(nav_coord)
-        if not nav_coord:
-            # Check if this is a sub-family that should roll up (e.g., system_meta -> system)
-            for base_family, base_coord in self.family_mappings.items():
-                if family_name.startswith(f"{base_family}_"):
-                    nav_coord = base_coord
-                    has_nav_coord = True
-                    break
-            
-            if not nav_coord:
-                # Family exists in semantic space only
-                nav_coord = family_name
+        # Get the nav coordinate for this family, using parent chain resolution
+        nav_coord = self._resolve_family_nav_coordinate(family_name, family_config, all_families)
+        has_nav_coord = bool(nav_coord) and nav_coord in self.family_mappings.values()
         
         # Process each node once and create address mappings
         for node_id, node_data in family_nodes.items():
@@ -269,82 +282,116 @@ class TreeShellBase:
         return address_lookup
     
     def _build_numeric_map(self) -> dict:
-        """Build clean numeric-only node map for nav display.
+        """Build clean numeric-only node map using proper parent hierarchy.
         
-        Families are siblings starting from 0.1 (no 0 except at root):
-        - system family: 0.1, with children 0.1.1, 0.1.2, 0.1.3, ...
-        - agent_management family: 0.2, with children 0.2.1, 0.2.2, ...  
-        - conversations family: 0.3, with children 0.3.1, 0.3.2, ...
-        
-        First node in each family gets the family coordinate (e.g., 0.1),
-        subsequent siblings get enumerated (e.g., 0.1.1, 0.1.2, etc.)
+        Builds tree structure based on parent relationships:
+        - Top-level families (parent: null) get nav coordinates: 0.1, 0.2, 0.3, ...
+        - Child families get hierarchical coordinates based on parent chain
         """
         numeric_nodes = {}
         
         # Load all family configurations
         families = self._load_family_configs()
         
-        # Group families by their nav coordinate
-        nav_groups = {}
-        for family_name, family_config in families.items():
-            # Get nav coordinate for this family
-            nav_coord = self.family_mappings.get(family_name)
-            if not nav_coord:
-                # Check for sub-family rollup
-                for base_family, base_coord in self.family_mappings.items():
-                    if family_name.startswith(f"{base_family}_"):
-                        nav_coord = base_coord
-                        break
-                if not nav_coord:
-                    continue  # Skip families without nav coordinates
-            
-            if nav_coord not in nav_groups:
-                nav_groups[nav_coord] = []
-            nav_groups[nav_coord].append((family_name, family_config))
+        # Build family tree structure using parent relationships
+        family_tree = self._build_family_tree(families)
         
-        # Process each nav group
-        for nav_coord, family_list in nav_groups.items():
-            # Assign sibling coordinates at NAV-1 level (0.0.0, 0.0.1, 0.0.2, ...)
-            for sibling_index, (family_name, family_config) in enumerate(family_list, start=1):
-                family_nodes = family_config.get("nodes", {})
-                node_names = list(family_nodes.keys())
-                
-                # Family gets NAV-1 coordinate: nav_coord.sibling_index
-                family_base_coord = f"{nav_coord}.{sibling_index}"
-                
-                # Assign proper sibling coordinates within this family
-                for i, node_id in enumerate(node_names):
-                    node_data = family_nodes[node_id]
-                    
-                    if i == 0:
-                        # First node gets the family base coordinate (menu node)
-                        numeric_coord = family_base_coord
-                    else:
-                        # Subsequent nodes become siblings (.1, .2, .3, etc.)
-                        numeric_coord = family_base_coord + "." + str(i)
-                    
-                    # Process node data
-                    processed_node = node_data.copy()
-                    if "title" in node_data:
-                        processed_node["prompt"] = node_data["title"]
-                    if "options" not in processed_node:
-                        processed_node["options"] = {}
-                    
-                    # Handle callable structure
-                    if "callable" in node_data:
-                        callable_info = node_data["callable"]
-                        processed_node.update({
-                            "function_name": callable_info.get("function_name"),
-                            "import_path": callable_info.get("import_path"),
-                            "import_object": callable_info.get("import_object"),
-                            "is_async": callable_info.get("is_async", False),
-                            "args_schema": callable_info.get("args_schema", {})
-                        })
-                        del processed_node["callable"]
-                    
-                    numeric_nodes[numeric_coord] = processed_node
+        # Assign coordinates to family tree recursively
+        self._assign_family_coordinates(family_tree, families, numeric_nodes)
         
         return numeric_nodes
+    
+    def _build_family_tree(self, families: dict) -> dict:
+        """Build hierarchical family tree using parent relationships."""
+        tree = {}
+        
+        # First pass: identify top-level families (parent: null)
+        top_level = []
+        for family_name, family_config in families.items():
+            parent = family_config.get("parent")
+            if parent is None:
+                # Check if this family is in nav_config
+                nav_coord = self.family_mappings.get(family_name)
+                if nav_coord:
+                    top_level.append(family_name)
+        
+        # Sort top-level families by nav coordinate for consistent ordering
+        top_level.sort(key=lambda f: self.family_mappings.get(f, "999"))
+        
+        # Build tree recursively
+        for family_name in top_level:
+            tree[family_name] = self._build_family_subtree(family_name, families)
+        
+        return tree
+    
+    def _build_family_subtree(self, parent_family: str, families: dict) -> dict:
+        """Recursively build subtree for a family."""
+        subtree = {"_family_config": families[parent_family], "_children": {}}
+        
+        # Find all children of this family
+        for family_name, family_config in families.items():
+            if family_config.get("parent") == parent_family:
+                subtree["_children"][family_name] = self._build_family_subtree(family_name, families)
+        
+        return subtree
+    
+    def _assign_family_coordinates(self, family_tree: dict, families: dict, numeric_nodes: dict, base_coord: str = "0"):
+        """Recursively assign coordinates to families in the tree."""
+        child_index = 1
+        
+        for family_name, subtree in family_tree.items():
+            family_config = subtree["_family_config"]
+            
+            # Determine coordinate for this family
+            if base_coord == "0":
+                # Top-level family - use nav coordinate
+                nav_coord = self.family_mappings.get(family_name)
+                if not nav_coord:
+                    continue
+                family_coord = nav_coord
+            else:
+                # Child family - extend parent coordinate
+                family_coord = f"{base_coord}.{child_index}"
+                child_index += 1
+            
+            # Process nodes in this family
+            family_nodes = family_config.get("nodes", {})
+            node_names = list(family_nodes.keys())
+            
+            for i, node_id in enumerate(node_names):
+                node_data = family_nodes[node_id]
+                
+                if i == 0:
+                    # First node gets the family coordinate
+                    numeric_coord = family_coord
+                else:
+                    # Subsequent nodes get sub-coordinates
+                    numeric_coord = f"{family_coord}.{i}"
+                
+                # Process node data
+                processed_node = node_data.copy()
+                if "title" in node_data:
+                    processed_node["prompt"] = node_data["title"]
+                if "options" not in processed_node:
+                    processed_node["options"] = {}
+                
+                # Handle callable structure
+                if "callable" in node_data:
+                    callable_info = node_data["callable"]
+                    processed_node.update({
+                        "function_name": callable_info.get("function_name"),
+                        "import_path": callable_info.get("import_path"),
+                        "import_object": callable_info.get("import_object"),
+                        "is_async": callable_info.get("is_async", False),
+                        "args_schema": callable_info.get("args_schema", {})
+                    })
+                    del processed_node["callable"]
+                
+                numeric_nodes[numeric_coord] = processed_node
+            
+            # Recursively assign coordinates to children
+            if subtree["_children"]:
+                self._assign_family_coordinates(subtree["_children"], families, numeric_nodes, family_coord)
 
     def _resolve_combo_node_addresses(self) -> dict:
         """Build combo address mapping supporting mixed semantic/numeric coordinates.
@@ -1138,12 +1185,13 @@ class TreeShellBase:
             
         menu_options = {}
         
-        # Universal options - 0 shows description, 1 executes
-        menu_options["1"] = "execute"
+        # For callable nodes, add exec option  
+        if node.get("type") == "Callable" or "callable" in node:
+            menu_options["exec"] = "execute"
         
         # Node-specific options
         options = node.get("options", {})
-        for i, (key, target) in enumerate(options.items(), start=2):
+        for i, (key, target) in enumerate(options.items(), start=1):
             # Use combo_nodes for unified address resolution
             target_node = self.combo_nodes.get(target) if hasattr(self, 'combo_nodes') else None
             
@@ -1240,6 +1288,139 @@ class TreeShellBase:
         # a consistent interface for future async initialization needs)
         
         return self
+    
+    def _get_session_directory(self):
+        """Get the session directory path for this shell type."""
+        import os
+        from datetime import datetime
+        
+        heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR', '/tmp/heaven_data')
+        today = datetime.now().strftime('%Y-%m-%d')
+        session_dir = os.path.join(heaven_data_dir, 'tmp', 'tree_shell_sessions', today)
+        
+        # Create directory if it doesn't exist
+        os.makedirs(session_dir, exist_ok=True)
+        
+        return session_dir
+    
+    def _get_session_file_path(self, session_id=None):
+        """Get the full path to the session file."""
+        session_dir = self._get_session_directory()
+        
+        if session_id:
+            # Agent shell with specific session_id
+            filename = f"{session_id}.json"
+        else:
+            # User shell with default session
+            filename = "user_session.json"
+        
+        return os.path.join(session_dir, filename)
+    
+    def _save_session_state(self, session_id=None):
+        """Save current session state to pickle file for proper Python object preservation."""
+        import pickle
+        try:
+            session_file = self._get_session_file_path(session_id).replace('.json', '.pkl')
+            
+            state_data = {
+                "current_position": self.current_position,
+                "stack": self.stack.copy(),
+                "session_vars": self.session_vars.copy(),
+                "execution_history": self.execution_history.copy(),
+                "saved_pathways": self.saved_pathways.copy(),
+                "saved_templates": self.saved_templates.copy(),
+                "graph_ontology": self.graph_ontology.copy(),
+                "chain_results": getattr(self, 'chain_results', {}),
+                "step_counter": getattr(self, 'step_counter', 0),
+                "app_id": self.app_id,
+                "domain": self.domain,
+                "role": self.role,
+                "timestamp": datetime.datetime.utcnow().isoformat()
+            }
+            
+            with open(session_file, 'wb') as f:
+                pickle.dump(state_data, f)
+                
+        except Exception as e:
+            print(f"Warning: Could not save session state: {e}")
+    
+    def _load_session_state(self, session_id=None):
+        """Load session state from pickle file if it exists, gracefully handling errors."""
+        import pickle
+        try:
+            session_file = self._get_session_file_path(session_id).replace('.json', '.pkl')
+            
+            if not os.path.exists(session_file):
+                # Check for old JSON format and migrate if exists
+                json_file = self._get_session_file_path(session_id)
+                if os.path.exists(json_file):
+                    self._migrate_json_to_pickle(json_file, session_file)
+                else:
+                    return  # No previous session, start fresh
+            
+            with open(session_file, 'rb') as f:
+                state_data = pickle.load(f)
+            
+            # Restore state
+            self.current_position = state_data.get("current_position", "0")
+            self.stack = state_data.get("stack", ["0"])
+            self.execution_history = state_data.get("execution_history", [])
+            self.saved_pathways = state_data.get("saved_pathways", {})
+            self.saved_templates = state_data.get("saved_templates", {})
+            self.graph_ontology.update(state_data.get("graph_ontology", {}))
+            
+            # Handle session_vars with error recovery
+            raw_session_vars = state_data.get("session_vars", {})
+            self.session_vars = self._clean_session_vars(raw_session_vars)
+            
+            # Optional chain state
+            if hasattr(self, 'chain_results'):
+                self.chain_results = state_data.get("chain_results", {})
+            if hasattr(self, 'step_counter'):
+                self.step_counter = state_data.get("step_counter", 0)
+                
+        except Exception as e:
+            print(f"Warning: Could not load session state, starting fresh: {e}")
+    
+    def _clean_session_vars(self, raw_session_vars: dict) -> dict:
+        """Clean session vars by removing any objects that can't be properly accessed."""
+        import pickle
+        cleaned_vars = {}
+        removed_keys = []
+        
+        for key, value in raw_session_vars.items():
+            try:
+                # Test if we can access the object and pickle it again
+                # This will fail if classes are missing or objects are corrupted
+                pickle.dumps(value)
+                repr(value)  # Test if object is accessible
+                cleaned_vars[key] = value
+            except Exception as e:
+                removed_keys.append(key)
+                print(f"Warning: Removed corrupted session variable '{key}': {e}")
+        
+        if removed_keys:
+            print(f"Session recovery: Removed {len(removed_keys)} corrupted variables, kept {len(cleaned_vars)} good ones")
+        
+        return cleaned_vars
+    
+    def _migrate_json_to_pickle(self, json_file: str, pickle_file: str):
+        """Migrate existing JSON session file to pickle format."""
+        import json
+        import pickle
+        try:
+            with open(json_file, 'r') as f:
+                json_data = json.load(f)
+            
+            with open(pickle_file, 'wb') as f:
+                pickle.dump(json_data, f)
+            
+            # Remove old JSON file after successful migration
+            os.remove(json_file)
+            print(f"Migrated session from JSON to pickle: {pickle_file}")
+            
+        except Exception as e:
+            print(f"Warning: Could not migrate JSON session file: {e}")
     
     async def main(self):
         """

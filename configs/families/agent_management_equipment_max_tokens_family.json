@@ -1,0 +1,55 @@
+{
+  "family_root": "agent_management_equipment_max_tokens",
+  "parent": "agent_management_equipment",
+  "domain": "agent_management",
+  "description": "Manage max tokens setting",
+  "nodes": {
+    "agent_management_equipment_max_tokens": {
+      "id": "agent_management_equipment_max_tokens",
+      "title": "📏 Max Tokens",
+      "description": "Manage max tokens setting",
+      "type": "Menu",
+      "options": {
+        "1": "equip",
+        "2": "unequip",
+        "3": "list"
+      }
+    },
+    "equip": {
+      "id": "agent_management_equipment_max_tokens_equip",
+      "title": "Equip Max Tokens",
+      "description": "Set maximum tokens",
+      "type": "Callable",
+      "callable": {
+        "function_name": "equip_max_tokens",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "equip_max_tokens",
+        "args_schema": {
+          "max_tokens": "int"
+        }
+      }
+    },
+    "unequip": {
+      "id": "agent_management_equipment_max_tokens_unequip",
+      "title": "Unequip Max Tokens",
+      "description": "Remove max tokens setting",
+      "type": "Callable",
+      "callable": {
+        "function_name": "unequip_max_tokens",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "unequip_max_tokens"
+      }
+    },
+    "list": {
+      "id": "agent_management_equipment_max_tokens_list",
+      "title": "List Max Tokens",
+      "description": "Show current max tokens setting",
+      "type": "Callable",
+      "callable": {
+        "function_name": "list_max_tokens",
+        "import_path": "heaven_tree_repl.agent_config_management",
+        "import_object": "list_max_tokens"
+      }
+    }
+  }
+}

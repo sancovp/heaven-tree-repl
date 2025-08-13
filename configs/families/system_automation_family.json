@@ -1,5 +1,6 @@
 {
   "family_root": "system_automation",
+  "parent": "system",
   "domain": "system_automation",
   "description": "Schedule = when + if + then, Automation = set of schedules, Master Schedule = all automations",
   "nodes": {

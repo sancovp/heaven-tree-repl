@@ -335,8 +335,30 @@ class ExecutionEngineMixin:
         cmd = parts[0].lower()
         args_str = parts[1] if len(parts) > 1 else ""
         
-        # Handle numerical menu selection
-        if cmd.isdigit():
+        # Handle menu selection - exec or numbers
+        if cmd == "exec":
+            # Execute current node (like option 1 used to do)
+            try:
+                if args_str == "()":
+                    args = "()"  # Special case: () means no-args
+                else:
+                    args = json.loads(args_str) if args_str else {}
+            except json.JSONDecodeError:
+                return {"error": "Invalid JSON arguments"}
+                
+            result, success = await self._execute_action(self.current_position, args)
+            if success:
+                return self._build_response({
+                    "action": "execute",
+                    **result,
+                    "menu": self._get_node_menu(self.current_position)
+                })
+            else:
+                return self._build_response({
+                    "action": "execute",
+                    **result
+                })
+        elif cmd.isdigit():
             return await self._handle_numerical_selection(int(cmd), args_str)
         
         # Handle .exec() notation: coordinate.exec or coordinate.exec()
@@ -352,13 +374,32 @@ class ExecutionEngineMixin:
             else:
                 return {"error": f"Invalid .exec format: {command}"}
             
-            # Jump to coordinate then execute (like option 1)
+            # Jump to coordinate then execute
             jump_result = await self._handle_jump(coord_part)
             if "error" in jump_result:
                 return jump_result
             
-            # Execute at the new position
-            return await self._handle_numerical_selection(1, exec_args)
+            # Execute at the new position (same as "exec" command)
+            try:
+                if exec_args == "()":
+                    args = "()"  # Special case: () means no-args
+                else:
+                    args = json.loads(exec_args) if exec_args else {}
+            except json.JSONDecodeError:
+                return {"error": "Invalid JSON arguments"}
+                
+            result, success = await self._execute_action(self.current_position, args)
+            if success:
+                return self._build_response({
+                    "action": "execute",
+                    **result,
+                    "menu": self._get_node_menu(self.current_position)
+                })
+            else:
+                return self._build_response({
+                    "action": "execute",
+                    **result
+                })
             
         # Handle universal commands
         if cmd == "jump":

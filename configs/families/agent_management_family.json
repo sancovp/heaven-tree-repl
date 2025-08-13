@@ -1,11 +1,12 @@
 {
   "family_root": "agent_management",
+  "parent": null,
   "domain": "agent_management",
-  "description": "Family for 🎮 Agent Management Hub",
+  "description": "Human interface for managing AI agents and workflows",
   "nodes": {
     "agent_management": {
       "id": "agent_management",
-      "title": "🎮 Agent Management Hub",
+      "title": "\ud83c\udfae Agent Management Hub",
       "description": "Human interface for managing AI agents and workflows",
       "type": "Menu",
       "options": {
@@ -17,13 +18,13 @@
     },
     "system": {
       "id": "agent_management.system",
-      "title": "⚙️ System",
+      "title": "\u2699\ufe0f System",
       "description": "System settings and monitoring",
       "type": "Callable"
     },
     "sessions": {
       "id": "agent_management.sessions",
-      "title": "📊 Sessions",
+      "title": "\ud83d\udcca Sessions",
       "description": "Manage active and historical sessions",
       "type": "Callable"
     }

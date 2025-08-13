@@ -1,5 +1,6 @@
 {
   "family_root": "conversations",
+  "parent": null,
   "domain": "conversations",
   "description": "Chat and conversation management system",
   "nodes": {

@@ -1,5 +1,6 @@
 {
   "family_root": "system_mcp_generator",
+  "parent": "system",
   "domain": "system_mcp_generator",
   "description": "Generate MCP servers from TreeShell applications",
   "nodes": {

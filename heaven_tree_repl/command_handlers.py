@@ -97,36 +97,13 @@ class CommandHandlersMixin:
                 "available_options": list(current_node.get("options", {}).keys())
             })
             
-        elif option == 1:
-            # Execute current node
-            try:
-                if args_str == "()":
-                    args = "()"  # Special case: () means no-args
-                else:
-                    args = json.loads(args_str) if args_str else {}
-            except json.JSONDecodeError:
-                return {"error": "Invalid JSON arguments"}
-                
-            result, success = await self._execute_action(self.current_position, args)
-            if success:
-                return self._build_response({
-                    "action": "execute",
-                    **result,
-                    "menu": self._get_node_menu(self.current_position)
-                })
-            else:
-                return self._build_response({
-                    "action": "execute",
-                    **result
-                })
-                
         else:
             # Navigate to option or execute with args
             options = current_node.get("options", {})
             option_keys = list(options.keys())
             
-            if option - 2 < len(option_keys):
-                target_key = option_keys[option - 2]
+            if option - 1 < len(option_keys):
+                target_key = option_keys[option - 1]
                 target_coord = options[target_key]
                 
                 # If args provided, execute at target
