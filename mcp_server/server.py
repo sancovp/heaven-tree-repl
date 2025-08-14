@@ -105,8 +105,9 @@ async def serve() -> None:
                 
                 ## Action Execution:
                 - NUMBER - Execute numbered menu option (e.g., '1', '2', '3')
+                - '<coordinate>.exec {"key": "value"}' - Execute at coordinate with JSON arguments
+                - '<shortcut>' - Execute shortcut directly  
                 - NUMBER + JSON - Execute with arguments (e.g., '1 {"title": "Chat", "message": "Hello"}')
-                - NUMBER, args={...} - Alternative argument format
                 
                 ## Pathway Management:
                 - 'build_pathway' - Start recording a pathway
@@ -144,7 +145,7 @@ async def serve() -> None:
                     "properties": {
                         "command": {
                             "type": "string",
-                            "description": "TreeShell command to execute (e.g., 'jump 0.1.1', '1 {\"message\": \"hello\"}', or '' for menu)",
+                            "description": "TreeShell command to execute (e.g., 'nav', '1', '0.1.12.3.exec {\"tool_name\": \"NetworkEditTool\"}', or '' for menu)",
                         }
                     },
                     "required": ["command"],

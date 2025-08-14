@@ -2,7 +2,7 @@
   "game_config": {
     "title": "Groundhog Day Crystal Forest Game",
     "subtitle": "The AI Ascension Chronicles", 
-    "version": "0.1.32",
+    "version": "0.1.33",
     "default_zone": "crystal_forest"
   },
   "zones": {
