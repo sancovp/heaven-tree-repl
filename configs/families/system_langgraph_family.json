@@ -14,7 +14,7 @@
       "type": "Callable",
       "prompt": "Execute Graph",
       "description": "Execute a LangGraph workflow",
-      "signature": "execute_graph(tool_name: str, parameters: dict) -> result",
+      "signature_override": "execute_graph(tool_name: str, parameters: dict) -> result",
       "function_name": "execute_omnitool_graph",
       "import_path": "langgraph_omnitool_executor",
       "import_object": "execute_omnitool_graph",

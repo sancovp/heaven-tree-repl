@@ -114,6 +114,9 @@ class TreeShellBase:
         # Chain execution state
         self.chain_results = {}
         self.step_counter = 0
+        
+        # Load session state after all initialization is complete
+        self._load_session_state()
     
     def _build_family_mappings(self) -> None:
         """Build family name to coordinate mappings from nav config."""
@@ -243,6 +246,10 @@ class TreeShellBase:
             # Ensure options exist for auto-generation
             if "options" not in processed_node:
                 processed_node["options"] = {}
+            
+            # Copy family domain to each node if not already set
+            if "domain" not in processed_node and "domain" in family_config:
+                processed_node["domain"] = family_config["domain"]
             
             # Handle nested callable structure if it exists
             if "callable" in node_data:
@@ -732,6 +739,7 @@ class TreeShellBase:
                 "prompt": node.get("prompt", f"Node {coord}"),
                 "description": node.get("description", f"Node at {coord}"),
                 "signature": node.get("signature", f"execute() -> result"),
+                "signature_override": node.get("signature_override"),  # Copy signature override
                 "function_name": node.get("function_name"),
                 "args_schema": node.get("args_schema", {}),
                 "options": {}
@@ -759,24 +767,32 @@ class TreeShellBase:
         return node or {}
     
     def _get_domain_chain(self) -> str:
-        """Build domain chain by walking up the position hierarchy."""
-        domains = [self.app_id]  # Start with app_id
+        """Build domain chain by walking from root to current position, showing domain of each node."""
+        domains = []
         
         # Split current position into parts (e.g., "0.3.1.2" -> ["0", "3", "1", "2"])
         if self.current_position:
             parts = self.current_position.split('.')
             
-            # Walk up the hierarchy, checking each level for domain
+            # Walk from root to current position, checking each level for domain
             for i in range(len(parts)):
                 # Build position string for current level (e.g., "0", "0.3", "0.3.1", etc.)
                 level_position = '.'.join(parts[:i+1])
-                node = self.numeric_nodes.get(level_position, {})
                 
-                # If this node has a domain, add it to the chain
+                # Check both numeric_nodes and nodes for domain
+                node = self.numeric_nodes.get(level_position) or self.nodes.get(level_position, {})
+                
+                # Add domain or error message for missing domain
                 if 'domain' in node:
                     domains.append(node['domain'])
+                else:
+                    domains.append(f"NO DOMAIN AT NODE {level_position}")
         
-        # Join with dots, avoiding duplicates
+        # If no position, use root domain from config
+        if not domains:
+            domains.append(self.domain)
+        
+        # Join with dots, avoiding duplicates but preserving order
         return '.'.join(dict.fromkeys(domains))  # dict.fromkeys preserves order and removes dupes
     
     def _build_response(self, payload: dict) -> dict:
@@ -1225,7 +1241,7 @@ class TreeShellBase:
         description = resolve_description(raw_description)
         signature = "No signature available"
         
-        # For callable nodes, try to extract function documentation
+        # For callable nodes, extract function documentation
         if node.get("type") == "Callable":
             function_name = node.get("function_name")
             if function_name:
@@ -1233,6 +1249,10 @@ class TreeShellBase:
                 signature = func_signature
                 # Don't override description - preserve original HEAVEN resolution protocol
                 # The renderer will handle description resolution properly
+            
+            # Check for explicit signature override
+            if "signature_override" in node:
+                signature = node["signature_override"]
         
         # Use DisplayBrief for root node description
         if node_coord == "0":

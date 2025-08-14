@@ -281,6 +281,9 @@ class ExecutionEngineMixin:
             
         self.step_counter += 1
         
+        # Save session state after execution
+        self._save_session_state()
+        
         return {"result": result, "execution": execution_record}, success
     
     def _test_add(self, final_args: dict) -> tuple:
@@ -344,7 +347,11 @@ class ExecutionEngineMixin:
                 else:
                     args = json.loads(args_str) if args_str else {}
             except json.JSONDecodeError:
-                return {"error": "Invalid JSON arguments"}
+                if self._detect_python_dict_syntax(args_str):
+                    suggested = self._suggest_json_conversion(args_str)
+                    return {"error": f"Detected Python dict syntax. TreeShell uses JSON format.\n\nYou wrote: {args_str}\nTry this instead: {suggested}\n\nRemember: Use double quotes, not single quotes!"}
+                else:
+                    return {"error": "Invalid JSON arguments"}
                 
             result, success = await self._execute_action(self.current_position, args)
             if success:
@@ -386,7 +393,11 @@ class ExecutionEngineMixin:
                 else:
                     args = json.loads(exec_args) if exec_args else {}
             except json.JSONDecodeError:
-                return {"error": "Invalid JSON arguments"}
+                if self._detect_python_dict_syntax(exec_args):
+                    suggested = self._suggest_json_conversion(exec_args)
+                    return {"error": f"Detected Python dict syntax. TreeShell uses JSON format.\n\nYou wrote: {exec_args}\nTry this instead: {suggested}\n\nRemember: Use double quotes, not single quotes!"}
+                else:
+                    return {"error": "Invalid JSON arguments"}
                 
             result, success = await self._execute_action(self.current_position, args)
             if success:
@@ -480,9 +491,15 @@ class ExecutionEngineMixin:
             # Check if this looks like a coordinate pattern (helpful suggestion)
             import re
             if re.match(r'^[0-9]+(\.[0-9]+)*$', cmd):
-                return {"error": f"Sounds like you might want to go somewhere else. Did you mean `jump {cmd}`?"}
+                return self._build_response({
+                    "action": "error", 
+                    "error": f"Sounds like you might want to go somewhere else. Did you mean `jump {cmd}`?"
+                })
                             
-            return {"error": f"Unknown command: {cmd}"}
+            return self._build_response({
+                "action": "error",
+                "error": f"Unknown command: {cmd}\n\nYou really ought to learn TreeShell before trying to use it the way you want to. You should enter the command `lang` to start learning TreeShell syntax and available commands.\n\nOr try `nav` to see all available positions, or `help` for basic guidance."
+            })
     
     def _substitute_template_vars(self, template: str, args_dict: dict) -> str:
         """Substitute variables in chain template with provided arguments."""

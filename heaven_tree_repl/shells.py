@@ -68,7 +68,7 @@ class TreeShell(
         parts.append("## 🗣️ Language Structure")
         parts.append("TreeShell is a **semantic programming language** with coordinate-based addressing:")
         parts.append("- **Words** = shortcuts (semantic aliases for coordinates and workflows)")
-        parts.append("- **Grammar** = operands (and, or, if, while) + chain syntax (->)")
+        parts.append("- **Grammar** = operands (and, or, if, while, for) + chain syntax (->)")
         parts.append("- **Execution** = node-based computation with data flow")
         parts.append("- **Vocabulary** = your custom shortcuts + base command set")
         parts.append("")
@@ -118,6 +118,7 @@ class TreeShell(
         parts.append("## 📝 Language Syntax")
         parts.append("**Simple Commands:** Direct execution")
         parts.append("- `jump <coordinate>` | `back` | `menu` | `exit`")
+        parts.append("- `<coordinate>.exec {\"args\": \"values\"}` → execute at coordinate")
         parts.append("- `<shortcut>` → execute shortcut directly")
         parts.append("- `nav` | `lang` → system introspection")
         parts.append("")
@@ -134,6 +135,7 @@ class TreeShell(
         parts.append("- `or` → alternative execute with existing data") 
         parts.append("- `if condition then ... else ...` → conditional execution")
         parts.append("- `while condition x body` → loop execution")
+        parts.append("- `for variable in collection x body` → iterate over collection")
         parts.append("- **TreeShell is TURING COMPLETE!** 🎉")
         parts.append("")
         
@@ -153,6 +155,7 @@ class TreeShell(
         # Usage examples
         parts.append("\n## 💡 Usage Examples")
         parts.append("- **Jump:** `brain` → navigate to Brain Management")  
+        parts.append("- **Execute:** `0.1.1.3.exec {\"tool_name\": \"NetworkEditTool\"}` → direct execution")
         parts.append("- **Chain:** `save {\"name\": \"key\", \"value\": \"data\"}` → execute with args")
         parts.append("- **Create:** `shortcut meta 0.0.2` → create jump shortcut")
         parts.append("- **Create:** `shortcut query \"0.0.7.1 {\\\"brain\\\": \\\"$brain\\\", \\\"query\\\": \\\"$question\\\"}\"` → chain shortcut")

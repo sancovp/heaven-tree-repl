@@ -10,6 +10,37 @@ from typing import Dict, List, Any, Optional, Tuple
 class CommandHandlersMixin:
     """Mixin class providing command handling functionality."""
     
+    def _detect_python_dict_syntax(self, args_str: str) -> bool:
+        """Detect if user is writing Python dict syntax instead of JSON."""
+        if not args_str.strip().startswith('{') or not args_str.strip().endswith('}'):
+            return False
+        
+        # Check for Python-specific syntax patterns
+        python_patterns = [
+            r"'[^']*':",  # Single-quoted keys
+            r":\s*'[^']*'",  # Single-quoted values
+            r"'[^']*'\s*:",  # Single-quoted keys with spaces
+            r":\s*'[^']*'\s*[,}]",  # Single-quoted values followed by comma or }
+            r"True\b|False\b|None\b",  # Python boolean/null literals
+        ]
+        
+        import re
+        for pattern in python_patterns:
+            if re.search(pattern, args_str):
+                return True
+        return False
+    
+    def _suggest_json_conversion(self, args_str: str) -> str:
+        """Convert Python dict syntax to JSON syntax."""
+        import re
+        # Basic conversion suggestions
+        suggested = args_str
+        # Convert single quotes to double quotes
+        suggested = re.sub(r"'([^']*)'", r'"\1"', suggested)
+        # Convert Python literals
+        suggested = suggested.replace('True', 'true').replace('False', 'false').replace('None', 'null')
+        return suggested
+    
     def _resolve_semantic_address(self, target_coord: str) -> str:
         """Auto-resolve family.node.subnode addresses to coordinates.
         
@@ -123,11 +154,16 @@ class CommandHandlersMixin:
                         else:
                             return self._build_response(result)
                     except json.JSONDecodeError:
-                        return {"error": "Invalid JSON arguments"}
+                        if self._detect_python_dict_syntax(args_str):
+                            suggested = self._suggest_json_conversion(args_str)
+                            return {"error": f"Detected Python dict syntax. TreeShell uses JSON format.\n\nYou wrote: {args_str}\nTry this instead: {suggested}\n\nRemember: Use double quotes, not single quotes!"}
+                        else:
+                            return {"error": "Invalid JSON arguments"}
                 else:
                     # Navigate to target
                     self.current_position = target_coord
                     self.stack.append(target_coord)
+                    self._save_session_state()  # Save state after position change
                     
                     return self._build_response({
                         "action": "navigate",
@@ -155,6 +191,7 @@ class CommandHandlersMixin:
         # Jump to target
         self.current_position = target_coord
         self.stack.append(target_coord)
+        self._save_session_state()  # Save state after position change
         
         # If args provided, execute immediately
         if args_str:
@@ -174,7 +211,11 @@ class CommandHandlersMixin:
                 else:
                     return self._build_response(result)
             except json.JSONDecodeError:
-                return {"error": "Invalid JSON arguments"}
+                if self._detect_python_dict_syntax(args_str):
+                    suggested = self._suggest_json_conversion(args_str)
+                    return {"error": f"Detected Python dict syntax. TreeShell uses JSON format.\n\nYou wrote: {args_str}\nTry this instead: {suggested}\n\nRemember: Use double quotes, not single quotes!"}
+                else:
+                    return {"error": "Invalid JSON arguments"}
         else:
             return self._build_response({
                 "action": "jump",
@@ -290,7 +331,11 @@ class CommandHandlersMixin:
                 else:
                     step_args = json.loads(step_args_str)
             except json.JSONDecodeError:
-                return {"error": f"Invalid JSON in step {i+1}: {step_args_str}"}
+                if self._detect_python_dict_syntax(step_args_str):
+                    suggested = self._suggest_json_conversion(step_args_str)
+                    return {"error": f"Detected Python dict syntax in step {i+1}. TreeShell uses JSON format.\n\nYou wrote: {step_args_str}\nTry this instead: {suggested}\n\nRemember: Use double quotes, not single quotes!"}
+                else:
+                    return {"error": f"Invalid JSON in step {i+1}: {step_args_str}"}
                 
             # Check if target is a shortcut first, then resolve to coordinate
             final_coord = target_coord
@@ -333,6 +378,7 @@ class CommandHandlersMixin:
         final_target = steps[-1].split()[0]
         self.current_position = final_target
         self.stack.append(final_target)
+        self._save_session_state()  # Save state after position change
         
         return self._build_response({
             "action": "chain",
@@ -597,6 +643,7 @@ class CommandHandlersMixin:
         if len(self.stack) > 1:
             self.stack.pop()
             self.current_position = self.stack[-1]
+            self._save_session_state()  # Save state after position change
         
         return self._build_response({
             "action": "back",
@@ -613,11 +660,13 @@ class CommandHandlersMixin:
             if menu_coord in self.nodes:
                 self.current_position = menu_coord
                 self.stack.append(menu_coord)
+                self._save_session_state()  # Save state after position change
                 break
         else:
             # Fallback to root
             self.current_position = "0"
             self.stack = ["0"]
+            self._save_session_state()  # Save state after position change
         
         return self._build_response({
             "action": "menu",
@@ -757,7 +806,7 @@ class CommandHandlersMixin:
             "action": "navigation_overview",
             "tree_structure": tree_display,
             "summary": summary,
-            "usage": "Use 'jump <coordinate>' to navigate directly to any node",
+            "usage": "Use 'jump <coordinate>' to navigate directly to any node, and '.exec {\"your\": \"args\", \"in\": \"json\"}' will execute with those args",
             "message": f"Navigation overview: {summary['total_nodes']} total nodes"
         })
     

@@ -95,8 +95,12 @@ def render_response(response: Dict[str, Any]) -> str:
         # List shortcuts
         content = _render_list_shortcuts(response)
         
+    elif action == "error":
+        # Explicit error action
+        content = _render_error(response)
+        
     elif "error" in response:
-        # Error display
+        # Error display (fallback)
         content = _render_error(response)
         
     else:

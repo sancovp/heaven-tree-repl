@@ -1,21 +1,69 @@
-MIT License
+TREE OF LIFE LICENSE v1.0
 
-Copyright (c) 2025 HEAVEN Development Team
+Copyright © 2025 HEAVEN Framework
+TreeShell implementation from heaven-tree-repl library
+Maintained by the HEAVEN Community (https://github.com/sancovp/heaven-ecosystem)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+The heaven-tree-repl library (HEAVEN TreeShell) is **free, open, and hackable.** Build on it, fork it, and share it — except:
+**you may not offer TreeShell itself as a commercial service without first obtaining a written enterprise whitelabel license from the HEAVEN Framework.**
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+---
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## PHILOSOPHY
+
+Your innovations shouldn't be optimizing OUR innovations.
+You should be building ON TOP OF our innovations.
+If you innovate IN our innovations instead of ON our innovations,
+you must share them with us so everything gets better.
+
+---
+
+## 1. You Can
+
+* **Run** TreeShell anywhere, for anything, for free.
+* **Build applications** using TreeShell as your foundation.
+* **Study & modify** the code, add features, change the interface—go wild.
+* **Share** your applications and forks publicly (must keep this license in place).
+* **Use for business** - build and sell your TreeShell-powered applications.
+
+## 2. Please Do
+
+* Keep this license notice and a link back to the main repo.
+* Mark clearly if you've modified TreeShell core files.
+* Contribute universal improvements back to the community.
+
+## 3. You Can't (Without Enterprise License)
+
+* **Sell TreeShell itself** as a hosted or managed service that others can sign up for without first obtaining a written enterprise whitelabel license from the HEAVEN Framework.
+* **Offer TreeShell hosting** as your primary business model without a granted enterprise license.
+* **Remove attribution** - the "Powered by heaven-tree-repl" statement in system configs must remain visible when using the library.
+
+> **Building applications ON TreeShell is totally encouraged.** Get paid to build custom TreeShell applications, offer consulting, or create TreeShell-powered products. However, you may not offer TreeShell itself as a service without first obtaining and being granted an enterprise whitelabel license.
+
+## 4. Special Provisions
+
+**Config System Override/Add/Exclude:** When using heaven-tree-repl as a library, you do NOT need to publish your user-level config customizations (override_nodes, add_nodes, exclude_nodes) unless you are specifically adding logic to core TreeShell files to accomplish it.
+
+**Universal Improvements:** If you add logic to base.py, shells.py, or other core files that would benefit all TreeShell users (logging, error handling, performance improvements, etc.), we'd appreciate contributions back to the community.
+
+**Easy Contribution:** We provide built-in workflows to make contributing improvements simple.
+
+## 5. No Warranty
+
+THERE IS NO WARRANTY FOR TREESHELL, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE TREESHELL "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF TREESHELL IS WITH YOU. SHOULD TREESHELL PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
+
+## 6. Limitation of Liability
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS TREESHELL AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE TREESHELL (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A FAILURE OF TREESHELL TO OPERATE WITH ANY OTHER PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+## 7. Breaking the Rules
+
+If you violate these terms and don't fix it within **30 days** after we let you know, your rights under this license end.
+
+---
+
+**The tree grows stronger when improvements to the trunk benefit everyone, while the branches can flourish in any direction you choose.**
+
+---
+
+By using TreeShell, you agree to abide by the Tree of Life License and help us build an ecosystem where human-AI collaboration thrives.

@@ -38,7 +38,7 @@
       "type": "Callable",
       "prompt": "Execute Tool",
       "description": "Execute a HEAVEN tool with parameters",
-      "signature": "execute_tool(tool_name: str, parameters: dict) -> dict",
+      "signature_override": "execute_tool(tool_name: str, parameters: dict) -> dict",
       "function_name": "_omni_execute_tool",
       "is_async": true,
       "args_schema": {

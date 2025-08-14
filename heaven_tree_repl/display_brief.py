@@ -96,7 +96,9 @@ class DisplayBrief(BaseModel):
 👤 Role: {{ role }}
 🌳 TreeShell Lang Tier: {{ tier_info }}
 📖 About {{ app_id }}: {{ about_app }}
-🌐 About {{ domain }}: {{ about_domain }}"""
+🌐 About {{ domain }}: {{ about_domain }}
+
+💡 Quick Start: Use command `nav` to open navigation"""
     game_name: str = "Groundhog Day Crystal Forest"
     
     # Zone configuration for dynamic game data
