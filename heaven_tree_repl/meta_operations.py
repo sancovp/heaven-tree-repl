@@ -6,6 +6,8 @@ import json
 import datetime
 import sys
 
+from . import logger
+
 
 class MetaOperationsMixin:
     """Mixin class providing meta operations functionality."""
@@ -61,10 +63,24 @@ class MetaOperationsMixin:
         return result, True
         
     def _meta_list_vars(self, final_args: dict) -> tuple:
-        """List all session variables."""
+        """List all session variables, hiding HeavenAgentConfig details."""
+        # Filter out HeavenAgentConfig and replace with summary
+        filtered_vars = {}
+        agent_config_count = 0
+        
+        for key, value in self.session_vars.items():
+            # Check if this is a HeavenAgentConfig object
+            if hasattr(value, '__class__') and 'HeavenAgentConfig' in str(type(value)):
+                agent_config_count += 1
+                filtered_vars[key] = f"<HeavenAgentConfig: {getattr(value, 'name', 'unnamed')} - use preview_dynamic_config to view>"
+            else:
+                filtered_vars[key] = value
+        
         result = {
-            "variables": dict(self.session_vars),
-            "count": len(self.session_vars)
+            "variables": filtered_vars,
+            "count": len(self.session_vars),
+            "hidden_agent_configs": agent_config_count,
+            "note": "HeavenAgentConfig objects hidden for readability. Use preview_dynamic_config to view agent configuration."
         }
         return result, True
         
@@ -213,6 +229,36 @@ class MetaOperationsMixin:
             node_data["options"] = {}
         if "args_schema" not in node_data:
             node_data["args_schema"] = {}
+            
+        # Automatically create prompt block for description and replace with reference
+        description = node_data.get("description", "")
+        if description and isinstance(description, str):
+            try:
+                from heaven_base.prompts.prompt_blocks.prompt_block_utils import write_prompt_block
+                
+                # Determine family and node name from coordinate
+                family_name = self._determine_family_for_coordinate(coordinate)
+                node_name = coordinate.split('.')[-1] if '.' in coordinate else coordinate
+                
+                # Create prompt block
+                prompt_block_name = f"{family_name}_{node_name}"
+                domain = "treeshell_node_descriptions"
+                subdomain = f"family_address_{family_name}_{node_name}"
+                
+                # Write the prompt block
+                result = write_prompt_block(
+                    name=prompt_block_name,
+                    text=description,
+                    domain=domain,
+                    subdomain=subdomain
+                )
+                
+                # Replace description with prompt block reference
+                node_data["description"] = [prompt_block_name]
+                
+            except Exception as e:
+                # If prompt block creation fails, keep original description
+                pass
             
         # Handle Callable nodes using shared processing logic
         if node_data["type"] == "Callable":
@@ -683,7 +729,7 @@ class MetaOperationsMixin:
     
     async def _omni_list_tools(self, final_args: dict) -> tuple:
         """List all available HEAVEN tools through OmniTool."""
-        print(f"DEBUG _omni_list_tools: final_args = {final_args}")
+        logger.debug(f"_omni_list_tools: final_args = {final_args}")
         try:
             # Import OmniTool from HEAVEN framework
             from heaven_base.utils.omnitool import omnitool

@@ -46,6 +46,9 @@ from .mcp_generator import generate_mcp_from_config, generate_mcp_from_dict, Tre
 # Import Shell classes from shells module
 from .shells import TreeShell, AgentTreeShell, UserTreeShell, FullstackTreeShell
 
+# Import config loader for factory usage
+from .system_config_loader_v2 import SystemConfigLoader
+
 # Import agent config management functions
 from .agent_config_management import (
     equip_system_prompt, unequip_system_prompt, list_system_prompts,
@@ -66,6 +69,7 @@ __all__ = [
     "AgentTreeShell", 
     "UserTreeShell",
     "FullstackTreeShell",
+    "SystemConfigLoader",
     "TreeShellBase",
     "DisplayBrief",
     "render_response",

@@ -13,13 +13,9 @@ from heaven_tree_repl.shells import UserTreeShell
 from heaven_tree_repl import render_response
 
 async def main():
-    # Create shell with proper config including session persistence
-    config = {
-        "app_id": "user_interface_hub",
-        "domain": "user_management", 
-        "role": "user"
-    }
-    shell = UserTreeShell(config)
+    # Create shell using new 19-config system API
+    # UserTreeShell now loads system configs and applies dev customizations automatically
+    shell = UserTreeShell(user_config_path=None)  # No dev customizations, use system defaults
     
     # Get command from command line argument
     command = sys.argv[1]

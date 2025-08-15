@@ -727,6 +727,7 @@ class CommandHandlersMixin:
                 # Get node info
                 node_type = node.get("type", "Unknown")
                 prompt = node.get("prompt", "No prompt")
+                title = node.get("title", "")
                 description = node.get("description", "")
                 
                 # Ontological emoji DSL - each emoji represents a semantic category
@@ -734,17 +735,17 @@ class CommandHandlersMixin:
                     # Domain-specific navigation classifiers
                     if depth == 0:  # Root
                         icon = "🔮"  # Root crystal (special case)
-                    elif "Brain" in prompt:
+                    elif (prompt and "Brain" in prompt) or (title and "Brain" in title):
                         icon = "🧠"  # Brain/AI/knowledge domain
-                    elif "Doc" in prompt or "Help" in prompt:
+                    elif (prompt and ("Doc" in prompt or "Help" in prompt)) or (title and ("Doc" in title or "Help" in title)):
                         icon = "📜"  # Documentation/help domain  
-                    elif "MCP" in prompt or "Generator" in prompt:
+                    elif (prompt and ("MCP" in prompt or "Generator" in prompt)) or (title and ("MCP" in title or "Generator" in title)):
                         icon = "🚀"  # Generation/creation domain
-                    elif "OmniTool" in prompt or "Tool" in prompt:
+                    elif (prompt and ("OmniTool" in prompt or "Tool" in prompt)) or (title and ("OmniTool" in title or "Tool" in title)):
                         icon = "🛠️"  # Tools/utilities domain
-                    elif "Meta" in prompt or "Operations" in prompt:
+                    elif (prompt and ("Meta" in prompt or "Operations" in prompt)) or (title and ("Meta" in title or "Operations" in title)):
                         icon = "🌀"  # Meta/system operations domain
-                    elif "Agent" in prompt:
+                    elif (prompt and "Agent" in prompt) or (title and "Agent" in title):
                         icon = "🤖"  # Agent systems domain
                     else:
                         icon = "🗺️"  # General navigation hub

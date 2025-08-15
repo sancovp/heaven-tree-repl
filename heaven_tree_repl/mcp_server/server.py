@@ -34,6 +34,33 @@ class TreeShellMCPServer:
         # Initialize the conversation shell
         self.shell = None
     
+    def _find_latest_user_config(self, heaven_data_dir: str) -> str:
+        """Find the latest user config directory with dev customizations."""
+        try:
+            if not os.path.exists(heaven_data_dir):
+                return None
+                
+            # Look for directories that match the pattern: app_name_v1_0, etc.
+            config_dirs = []
+            for item in os.listdir(heaven_data_dir):
+                item_path = os.path.join(heaven_data_dir, item)
+                if os.path.isdir(item_path):
+                    # Check if it has a configs subdirectory
+                    configs_path = os.path.join(item_path, 'configs')
+                    if os.path.exists(configs_path):
+                        config_dirs.append(configs_path)
+            
+            if not config_dirs:
+                return None
+                
+            # Return the most recently modified config directory
+            latest_config_dir = max(config_dirs, key=lambda x: os.path.getmtime(x))
+            return latest_config_dir
+            
+        except Exception as e:
+            print(f"Warning: Could not find user config directory: {e}")
+            return None
+    
     async def _initialize_shell(self):
         """Initialize the conversation management shell"""
         try:
@@ -42,8 +69,18 @@ class TreeShellMCPServer:
                 os.environ['HEAVEN_DATA_DIR'] = '/tmp/heaven_data'
                 os.makedirs('/tmp/heaven_data', exist_ok=True)
             
-            # Create and initialize UserTreeShell using its own main method
-            shell_instance = UserTreeShell({})
+            # Create and initialize UserTreeShell with user's dev customizations
+            # Find the user's latest dev config directory from HEAVEN_DATA_DIR
+            heaven_data_dir = os.getenv('HEAVEN_DATA_DIR', '/tmp/heaven_data')
+            user_config_path = self._find_latest_user_config(heaven_data_dir)
+            
+            if user_config_path:
+                print(f"Loading user customizations from: {user_config_path}")
+                shell_instance = UserTreeShell(user_config_path=user_config_path)
+            else:
+                print("No user customizations found, using clean system configs")
+                shell_instance = UserTreeShell()
+                
             self.shell = await shell_instance.main()
             
         except Exception as e:
