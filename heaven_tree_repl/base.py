@@ -79,9 +79,6 @@ class TreeShellBase:
         self.session_vars = {}
         self.execution_history = []
         
-        # Load shortcuts
-        self._load_shortcuts()
-        
         # Pathway recording - enhanced system
         self.recording_pathway = False
         self.recording_start_position = None
@@ -127,6 +124,9 @@ class TreeShellBase:
         
         # Load session state after all initialization is complete
         self._load_session_state()
+        
+        # Load shortcuts AFTER session state so they don't get overridden
+        self._load_shortcuts()
     
     def _build_family_mappings(self) -> None:
         """Build family name to coordinate mappings from nav config."""
@@ -422,21 +422,16 @@ class TreeShellBase:
         return combo_nodes
 
     def _load_shortcuts(self) -> None:
-        """Load shortcuts from JSON files. Override in subclasses for different layers."""
-        shortcuts = {}
-        
-        # Check if shortcuts were provided by SystemConfigLoader in graph_config
-        if hasattr(self, 'graph') and 'shortcuts' in self.graph:
-            # Use shortcuts from SystemConfigLoader (preferred)
-            shortcuts = self.graph['shortcuts'].copy()
-        else:
-            # Fallback to direct loading for backward compatibility
-            base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
-            if base_shortcuts:
-                shortcuts.update(base_shortcuts)
-        
-        # Store in session vars
-        self.session_vars["_shortcuts"] = shortcuts
+        """Load shortcuts from SystemConfigLoader only. Override in subclasses for different layers."""
+        # Shortcuts are loaded directly from SystemConfigLoader when needed
+        # They are NOT stored in session_vars as they come from JSON config files
+        pass
+    
+    def get_shortcuts(self) -> dict:
+        """Get shortcuts directly from SystemConfigLoader, not from session_vars."""
+        if hasattr(self, 'system_config_loader'):
+            return self.system_config_loader.load_shortcuts(dev_config_path=None)
+        return {}
     
     def _load_library_config_file(self, filename: str) -> dict:
         """Load configuration from library only (not HEAVEN_DATA_DIR)."""
@@ -502,9 +497,9 @@ class TreeShellBase:
         
         # Get the directory where this module is located
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        # Go up one level to heaven-tree-repl directory, then into shortcuts
-        shortcuts_dir = os.path.join(os.path.dirname(current_dir), "shortcuts")
-        file_path = os.path.join(shortcuts_dir, filename)
+        # Go up one level to heaven-tree-repl directory, then into configs
+        configs_dir = os.path.join(os.path.dirname(current_dir), "configs")
+        file_path = os.path.join(configs_dir, filename)
         
         try:
             if os.path.exists(file_path):
@@ -599,6 +594,7 @@ class TreeShellBase:
             "prompt": "Main Menu", 
             "description": f"Root menu for {self.app_id}",
             "signature": "menu() -> navigation_options",
+            "domain": "main_menu",
             "options": {}  # Will be auto-generated from families
         }
         # print("Debug: Created root node, families will populate the rest")
@@ -784,8 +780,8 @@ class TreeShellBase:
                 # Build position string for current level (e.g., "0", "0.3", "0.3.1", etc.)
                 level_position = '.'.join(parts[:i+1])
                 
-                # Check both numeric_nodes and nodes for domain
-                node = self.numeric_nodes.get(level_position) or self.nodes.get(level_position, {})
+                # Check both nodes and numeric_nodes for domain
+                node = self.nodes.get(level_position) or self.numeric_nodes.get(level_position, {})
                 
                 # Add domain or error message for missing domain
                 if 'domain' in node:
@@ -961,7 +957,7 @@ class TreeShellBase:
         is_async = node_data.get("is_async", False)
         
         # Approach 1: Import from external module
-        if "import_path" in node_data and "import_object" in node_data:
+        if node_data.get("import_path") and node_data.get("import_object"):
             import_path = node_data["import_path"]
             import_object = node_data["import_object"]
             
@@ -1038,7 +1034,7 @@ class TreeShellBase:
         
         # If not found and we have node data, try to import it
         if not function and node:
-            if "import_path" in node and "import_object" in node:
+            if node.get("import_path") and node.get("import_object"):
                 try:
                     import_path = node["import_path"]
                     import_object = node["import_object"]
@@ -1344,10 +1340,13 @@ class TreeShellBase:
         try:
             session_file = self._get_session_file_path(session_id).replace('.json', '.pkl')
             
+            # Exclude config-based data that should reload from JSON every time
+            session_vars_to_save = {k: v for k, v in self.session_vars.items() if k != '_shortcuts'}
+            
             state_data = {
                 "current_position": self.current_position,
                 "stack": self.stack.copy(),
-                "session_vars": self.session_vars.copy(),
+                "session_vars": session_vars_to_save,
                 "execution_history": self.execution_history.copy(),
                 "saved_pathways": self.saved_pathways.copy(),
                 "saved_templates": self.saved_templates.copy(),
@@ -1391,8 +1390,10 @@ class TreeShellBase:
             self.saved_templates = state_data.get("saved_templates", {})
             self.graph_ontology.update(state_data.get("graph_ontology", {}))
             
-            # Handle session_vars with error recovery
+            # Handle session_vars with error recovery, excluding config-based data
             raw_session_vars = state_data.get("session_vars", {})
+            # Remove config-based data that should reload from JSON every time
+            raw_session_vars.pop('_shortcuts', None)
             self.session_vars = self._clean_session_vars(raw_session_vars)
             
             # Optional chain state

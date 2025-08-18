@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "specialized-ai-treeshell"
+version = "1.0.0"
+description = "Specialized AI TreeShell built on domain library"
+authors = [{name = "AI Specialist"}]
+dependencies = [
+    "my_domain_treeshell",
+]
+requires-python = ">=3.8"

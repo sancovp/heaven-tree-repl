@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-domain-treeshell"
+version = "1.0.0"
+description = "Domain-specific TreeShell with specialized features"
+authors = [{name = "Domain Expert"}]
+dependencies = [
+    "heaven_tree_repl",
+]
+requires-python = ">=3.8"

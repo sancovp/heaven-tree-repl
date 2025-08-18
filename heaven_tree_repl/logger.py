@@ -2,8 +2,8 @@
 Simple TreeShell Logger
 
 Uses TREESHELL_DEBUG environment variable:
-- TREESHELL_DEBUG="1" (default): Print debug messages to console
-- TREESHELL_DEBUG="0": Only print warnings/errors to console
+- TREESHELL_DEBUG="1": Print debug messages to console  
+- TREESHELL_DEBUG="0" (default): Only print warnings/errors to console
 - Always writes all messages to log file
 - Renames log file with _ERROR suffix if any errors are logged
 """
@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Check debug flag (same as global exception handler)
-debug_enabled = os.getenv("TREESHELL_DEBUG", "1") == "1"
+debug_enabled = os.getenv("TREESHELL_DEBUG", "0") == "1"
 
 # Create logs directory
 log_dir = Path('/tmp/heaven_data/logs')

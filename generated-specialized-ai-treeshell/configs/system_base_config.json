@@ -1,0 +1,30 @@
+{
+  "app_id": "base_treeshell",
+  "domain": "system",
+  "role": "assistant",
+  "about_app": "Base TreeShell system configuration",
+  "about_domain": "Core system operations and management",
+  "system_family": "system",
+  "customizations": {
+    "overrides": {
+      "configs/families/system_family.json:system": {
+        "title": "\ud83d\ude80 LEVEL 2 SUPER SYSTEM"
+      }
+    },
+    "additions": {
+      "configs/families/system_family.json:my_custom_node": {
+        "type": "Menu",
+        "title": "\ud83c\udfaf My Custom Feature",
+        "description": "This is a custom node added via dev config",
+        "options": {}
+      },
+      "configs/families/system_family.json:level2_feature": {
+        "type": "Menu",
+        "title": "\ud83c\udf1f Level 2 Exclusive Feature",
+        "description": "This feature only exists in level 2 libraries",
+        "options": {}
+      }
+    },
+    "exclusions": []
+  }
+}

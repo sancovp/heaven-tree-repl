@@ -17,7 +17,7 @@ from heaven_tree_repl import UserTreeShell, render_response
 
 class TreeShellTools(str, Enum):
     """Available TreeShell tools"""
-    RUN_CONVERSATION_SHELL = "run_conversation_shell"
+    INSTANTIATE_COMPUTATIONAL_SPACE = "instantiate_computational_space"
 
 
 class TreeShellMCPServer:
@@ -87,7 +87,7 @@ class TreeShellMCPServer:
             print(f"Warning: Could not initialize conversation shell: {e}")
             self.shell = None
     
-    async def run_conversation_shell(self, command: str) -> dict:
+    async def instantiate_computational_space(self, command: str) -> dict:
         """
         Run a command in the conversation management TreeShell.
         
@@ -129,7 +129,7 @@ class TreeShellMCPServer:
 
 async def serve() -> None:
     """Main MCP server function"""
-    server = Server("heaven-treeshell")
+    server = Server("heaven-tree-repl")
     treeshell_server = TreeShellMCPServer()
     
     @server.list_tools()
@@ -137,7 +137,7 @@ async def serve() -> None:
         """List available TreeShell tools"""
         return [
             Tool(
-                name=TreeShellTools.RUN_CONVERSATION_SHELL.value,
+                name=TreeShellTools.INSTANTIATE_COMPUTATIONAL_SPACE.value,
                 description="""
                 Run commands in the TreeShell conversation management interface.
                 
@@ -145,7 +145,7 @@ async def serve() -> None:
                 
                 ## Core Navigation Commands:
                 - '' (empty) - Show current menu/options
-                - 'jump X.Y.Z' - Navigate to specific coordinate (e.g., 'jump 0.1.1')
+                - 'jump X.Y.Z' - Navigate to specific coordinate (e.g., 'jump 0.1.1' numeric address or jump 'system' semantic address)
                 - 'back' - Go back to previous position
                 - 'menu' - Show current node menu
                 - 'exit' - Exit TreeShell
@@ -162,29 +162,15 @@ async def serve() -> None:
                 - 'follow_established_pathway NAME' - Execute saved pathway
                 - 'show_execution_history' - View command history
                 
-                ## Pattern Analysis (RSI System):
-                - 'analyze_patterns' - Analyze execution patterns for optimization
-                - 'crystallize_pattern NAME' - Create reusable pattern from analysis
-                - 'rsi_insights' - Show learning insights from execution
-                
                 ## Chain Execution:
-                - 'chain COORDS' - Execute multiple coordinates in sequence (e.g., 'chain 0.1.1,0.1.2')
+                - 'chain COORDS' - Execute multiple coordinates in sequence (e.g., 'chain <address> {...} -> <address2> {...}' (supports more than 2 steps))
                 
                 ## Conversation Management Structure:
-                - 0.1.1 = start_chat (title, message, tags)
-                - 0.1.2 = continue_chat (message)
-                - 0.1.3 = list_conversations (limit)
-                - 0.1.4 = load_conversation (conversation_id)
-                - 0.1.5 = search_conversations (query)
-                
-                ## Example Workflow:
-                1. '' - Show main menu
-                2. 'jump 0.1.1' - Go to start_chat
-                3. '1 {"title": "My Chat", "message": "Hello", "tags": "test"}' - Start conversation
-                4. 'jump 0.1.2' - Go to continue_chat
-                5. '1 {"message": "How are you?"}' - Continue conversation
-                6. 'jump 0.1.3' - Go to list_conversations
-                7. '1 {"limit": 5}' - List recent conversations
+                - start_chat (title, message, tags)
+                - continue_chat (message)
+                - list_conversations (limit)
+                - load_conversation (conversation_id)
+                - search_conversations (query)
                 """,
                 inputSchema={
                     "type": "object",
@@ -204,9 +190,9 @@ async def serve() -> None:
         """Handle tool calls"""
         try:
             match name:
-                case TreeShellTools.RUN_CONVERSATION_SHELL.value:
+                case TreeShellTools.INSTANTIATE_COMPUTATIONAL_SPACE.value:
                     command = arguments.get("command", "")
-                    result = await treeshell_server.run_conversation_shell(command)
+                    result = await treeshell_server.instantiate_computational_space(command)
                     
                     # Return only the rendered output, not the full JSON
                     if result.get("success"):

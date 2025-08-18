@@ -92,11 +92,11 @@ class SystemConfigLoader:
             
             # Special handling for shortcuts (they can be in different formats)
             if 'shortcuts' in config_type:
-                validated_config = self._validate_shortcuts_config(raw_data, model_class, filename)
+                # Skip Pydantic validation for shortcuts - just use raw JSON
+                return raw_data
             else:
                 validated_config = model_class(**raw_data)
-            
-            return validated_config.dict()
+                return validated_config.dict()
             
         except ValidationError as e:
             self.validation_warnings.append(f"Validation error in {filename}: {e}")
@@ -470,19 +470,20 @@ class SystemConfigLoader:
         """
         shortcuts = {}
         
-        # Load shortcuts for each config type  
+        # Load shortcuts for each config type by looking for corresponding shortcuts files
         for config_type in self.config_types:
-            if f"{config_type}_shortcuts" in self.system_config_files:
+            shortcuts_config_type = f"{config_type}_shortcuts"
+            if shortcuts_config_type in self.system_config_files:
                 # Load system shortcuts
-                system_shortcuts = self._load_and_validate_system_config(f"{config_type}_shortcuts")
+                system_shortcuts = self._load_and_validate_system_config(shortcuts_config_type)
                 if system_shortcuts:
-                    # Extract shortcuts from the config (handle both nested and direct formats)
-                    shortcuts_data = system_shortcuts.get('shortcuts', system_shortcuts)
+                    # Remove the 'path' metadata key if present
+                    shortcuts_data = {k: v for k, v in system_shortcuts.items() if k != 'path'}
                     if isinstance(shortcuts_data, dict):
                         shortcuts.update(shortcuts_data)
                 
                 # Load dev shortcuts if they exist
-                dev_shortcuts = self._load_and_validate_dev_config(f"{config_type}_shortcuts", dev_config_path)
+                dev_shortcuts = self._load_and_validate_dev_config(shortcuts_config_type, dev_config_path)
                 if dev_shortcuts:
                     # Apply dev customizations to shortcuts
                     shortcuts = self._apply_shortcuts_customizations(shortcuts, dev_shortcuts)

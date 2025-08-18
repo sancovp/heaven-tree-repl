@@ -156,18 +156,22 @@ class UserTreeReplMixin:
         """Initialize user-specific features."""
         from heaven_base.baseheavenagent import HeavenAgentConfig
         from heaven_base.unified_chat import ProviderEnum
+        from .agent_config_management import get_dynamic_config
         
         self.active_agent_sessions = {}
         self.approval_queue = ApprovalQueue()
         self.parent_approval_callback = parent_approval_callback
+        
+        # Get equipped values from dynamic config
+        dynamic_data = get_dynamic_config()
         self.dynamic_agent_config = HeavenAgentConfig(
-            name="DynamicAgent",
-            system_prompt="You are a helpful AI assistant.",
-            tools=[],
-            provider=ProviderEnum.OPENAI,
-            model="o4-mini",
-            temperature=0.7,
-            max_tokens=8000
+            name=dynamic_data.get('name', 'DynamicAgent'),
+            system_prompt=dynamic_data.get('system_prompt', 'You are a helpful AI assistant.'),
+            tools=dynamic_data.get('tools', []),
+            provider=dynamic_data.get('provider', ProviderEnum.OPENAI),
+            model=dynamic_data.get('model', 'o4-mini'),
+            temperature=dynamic_data.get('temperature', 0.7),
+            max_tokens=dynamic_data.get('max_tokens', 8000)
         )
         
         # Store dynamic_agent_config in session variables so equipment system can access it
@@ -178,38 +182,9 @@ class UserTreeReplMixin:
     
     def _resolve_agent_config(self, config_identifier: str):
         """Resolve config identifier to actual HeavenAgentConfig object."""
-        from heaven_base.unified_chat import ProviderEnum
-        from .agent_config_management import get_dynamic_config
-        
         if config_identifier == "dynamic":
-            # UPDATE the existing dynamic config with equipped values
-            dynamic_data = get_dynamic_config()
-            
-            # Update the existing config object with equipped values
-            if 'name' in dynamic_data:
-                self.dynamic_agent_config.name = dynamic_data['name']
-            if 'system_prompt' in dynamic_data:
-                self.dynamic_agent_config.system_prompt = dynamic_data['system_prompt']
-            if 'tools' in dynamic_data:
-                self.dynamic_agent_config.tools = dynamic_data['tools']
-            if 'provider' in dynamic_data:
-                # Map provider string to enum
-                provider_map = {
-                    'anthropic': ProviderEnum.ANTHROPIC,
-                    'openai': ProviderEnum.OPENAI,
-                    'google': ProviderEnum.GOOGLE
-                }
-                self.dynamic_agent_config.provider = provider_map.get(dynamic_data['provider'], ProviderEnum.OPENAI)
-            if 'model' in dynamic_data:
-                self.dynamic_agent_config.model = dynamic_data['model']
-            if 'temperature' in dynamic_data:
-                self.dynamic_agent_config.temperature = dynamic_data['temperature']
-            if 'max_tokens' in dynamic_data:
-                self.dynamic_agent_config.max_tokens = dynamic_data['max_tokens']
-            if 'prompt_suffix_blocks' in dynamic_data:
-                self.dynamic_agent_config.prompt_suffix_blocks = dynamic_data['prompt_suffix_blocks']
-            
-            return self.dynamic_agent_config  # Return the updated existing object
+            # Just return the dynamic config object as-is
+            return self.dynamic_agent_config
         else:
             # TODO: Load saved config by name
             # For now, fall back to the original dynamic agent config

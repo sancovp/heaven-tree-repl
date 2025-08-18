@@ -1095,3 +1095,57 @@ Based on the terminology and concepts in that previous answer, what additional d
             "brain_conversations": formatted_history,
             "total_brains_queried": len(conversations)
         }, True
+    
+    def _meta_visualize_tree(self, final_args: dict) -> tuple:
+        """Generate and PRINT the complete TreeShell mermaid diagram."""
+        try:
+            from .visualization_utils import generate_full_treeshell_structure_mermaid
+            
+            # Generate and PRINT the mermaid diagram
+            diagram = generate_full_treeshell_structure_mermaid(self)
+            print(diagram)
+            
+            # Generate statistics from actual loaded data
+            total_nodes = len(self.nodes) if hasattr(self, 'nodes') else 0
+            total_nav_coords = len(self.combo_nodes) if hasattr(self, 'combo_nodes') else 0
+            
+            # Count zones from zone_config
+            zone_roots = set()
+            if hasattr(self, 'zone_config'):
+                for config_data in self.zone_config.values():
+                    zone = config_data.get("zone", "default")
+                    zone_roots.add(zone)
+            
+            # Count node types
+            node_types = {}
+            if hasattr(self, 'nodes'):
+                for node_data in self.nodes.values():
+                    node_type = node_data.get("type", "Unknown")
+                    node_types[node_type] = node_types.get(node_type, 0) + 1
+            
+            stats = {
+                "total_semantic_nodes": total_nodes,
+                "total_numerical_coordinates": total_nav_coords,
+                "total_zone_roots": len(zone_roots),
+                "zone_roots": list(zone_roots),
+                "node_types_distribution": node_types,
+                "3d_address_space": "Tree 0 → Nav → Zone/Realm"
+            }
+            
+            result = {
+                "success": True,
+                "full_mermaid_diagram": diagram,
+                "mathematical_statistics": stats,
+                "complexity_level": "FULL",
+                "address_dimensions": 3
+            }
+            
+            # Save to session vars for easy access
+            self.session_vars["full_tree_visualization"] = diagram
+            self.session_vars["math_statistics"] = stats
+            
+            return result, True
+            
+        except Exception as e:
+            logger.error(f"Error in _meta_visualize_tree: {e}")
+            return {"error": f"Failed to generate FULL visualization: {e}"}, False

@@ -64,7 +64,7 @@ class TreeShell(
     def _meta_list_shortcuts(self, final_args: dict) -> tuple:
         """List all active shortcuts with details."""
         # Get shortcuts directly and format properly for display
-        shortcuts = self.session_vars.get("_shortcuts", {})
+        shortcuts = self.get_shortcuts()
         
         if not shortcuts:
             result = "**No shortcuts defined yet.**\n\n" + \
@@ -864,7 +864,7 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
         else:
             # Fallback for backward compatibility
             shortcuts = {}
-            base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
+            base_shortcuts = self._load_shortcuts_file("system_base_shortcuts.json")
             if base_shortcuts:
                 shortcuts.update(base_shortcuts)
             agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
@@ -901,11 +901,11 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
         self.user_config_path = user_config_path
         
         # First load base configs from TreeShell
-        base_config_loader = SystemConfigLoader(config_types=["base", "base_zone_config", "base_shortcuts"])
+        base_config_loader = SystemConfigLoader(config_types=["base", "base_zone_config"])
         base_config = base_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
         # Load user-specific configs
-        self.system_config_loader = SystemConfigLoader(config_types=["user", "user_zone_config", "user_shortcuts"])
+        self.system_config_loader = SystemConfigLoader(config_types=["base", "base_shortcuts", "user", "user_zone_config", "user_shortcuts"])
         user_config = self.system_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
         # Merge base + user configs (user configs extend/override base)
@@ -963,23 +963,8 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
             logger.error(f"Error loading config from {filename}: {e}")
             return {}
     
-    def _load_shortcuts(self) -> None:
-        """Load base + user shortcuts using SystemConfigLoader."""
-        if hasattr(self, 'system_config_loader'):
-            user_config_path = getattr(self, 'user_config_path', None)
-            shortcuts = self.system_config_loader.load_shortcuts(dev_config_path=user_config_path)
-        else:
-            # Fallback for backward compatibility
-            shortcuts = {}
-            base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
-            if base_shortcuts:
-                shortcuts.update(base_shortcuts)
-            user_shortcuts = self._load_shortcuts_file("system_user_shortcuts.json")
-            if user_shortcuts:
-                shortcuts.update(user_shortcuts)
-        
-        # Store in session vars
-        self.session_vars["_shortcuts"] = shortcuts
+    # UserTreeShell inherits _load_shortcuts from TreeShellBase
+    # No override needed - SystemConfigLoader handles all config_types automatically
     
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
         """Save shortcut to user_shortcuts.json for user-specific shortcuts."""
@@ -1054,7 +1039,7 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
         else:
             # Fallback for backward compatibility
             shortcuts = {}
-            base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
+            base_shortcuts = self._load_shortcuts_file("system_base_shortcuts.json")
             if base_shortcuts:
                 shortcuts.update(base_shortcuts)
             agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
