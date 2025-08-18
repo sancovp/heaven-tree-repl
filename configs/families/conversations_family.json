@@ -30,7 +30,8 @@
         "title": "str",
         "message": "str",
         "tags": "str",
-        "agent_config": "$selected_agent_config"
+        "agent_config": "$selected_agent_config",
+        "return_all_results": "bool"
       }
     },
     "continue": {
@@ -44,7 +45,8 @@
       "is_async": true,
       "args_schema": {
         "message": "str",
-        "agent_config": "$selected_agent_config"
+        "agent_config": "$selected_agent_config",
+        "return_all_results": "bool"
       },
       "prompt": "Continue Chat"
     },

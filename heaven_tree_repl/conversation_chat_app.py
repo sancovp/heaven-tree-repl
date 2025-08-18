@@ -17,6 +17,7 @@ from heaven_base import HeavenAgentConfig, ProviderEnum, completion_runner
 from heaven_base.langgraph.foundation import HeavenState
 from heaven_base.utils.heaven_response_utils import extract_heaven_response, extract_history_id_from_result
 from heaven_base.utils.heaven_conversation_utils import start_chat, continue_chat, load_chat, list_chats, search_chats, get_latest_history
+from heaven_base.tools.view_history_tool import view_history_tool_func
 
 # Global state for current conversation
 current_conversation = {
@@ -24,7 +25,7 @@ current_conversation = {
     "conversation_data": None
 }
 
-async def _start_chat(title: str, message: str, tags: str, agent_config):
+async def _start_chat(title: str, message: str, tags: str, agent_config, return_all_results: bool = False):
     """Start a new conversation."""
     if not title.strip():
         return "❌ Please provide a conversation title", False
@@ -57,8 +58,17 @@ async def _start_chat(title: str, message: str, tags: str, agent_config):
         )
         
         # Extract response and history_id
-        response = extract_heaven_response(result)
         history_id = extract_history_id_from_result(result)
+        
+        if return_all_results:
+            # Return full iteration view
+            from heaven_base.memory.history import History
+            history = History.load_from_id(history_id)
+            last_index = len(history.iterations) - 1
+            response = view_history_tool_func(history_id, start=last_index, end=last_index)
+        else:
+            # Return final message only (default behavior)
+            response = extract_heaven_response(result)
         
         if not history_id:
             return f"❌ Failed to get history_id from completion\n\n{debug_info}\n\nDEBUG INFO:\nCompletion result type: {type(result)}\nCompletion result: {repr(result)}\nExtracted response: {repr(response)}\nExtracted history_id: {repr(history_id)}", False
@@ -80,7 +90,6 @@ async def _start_chat(title: str, message: str, tags: str, agent_config):
 🆔 **ID:** {conversation_data['conversation_id']}
 🏷️ **Tags:** {', '.join(tag_list) if tag_list else 'None'}
 
-**Your message:** {message}
 **Agent response:** {response}"""
         
         return result_text, True
@@ -92,7 +101,7 @@ async def _start_chat(title: str, message: str, tags: str, agent_config):
         print(f"FULL ERROR DETAILS:\n{error_msg}")  # Also print to console
         return error_msg, False
 
-async def _continue_chat(message: str, agent_config):
+async def _continue_chat(message: str, agent_config, return_all_results: bool = False):
     """Continue the current conversation."""
     if not message.strip():
         return "❌ Please provide a message", False
@@ -129,8 +138,17 @@ async def _continue_chat(message: str, agent_config):
         )
         
         # Extract response and history_id
-        response = extract_heaven_response(result)
         history_id = extract_history_id_from_result(result)
+        
+        if return_all_results:
+            # Return full iteration view
+            from heaven_base.memory.history import History
+            history = History.load_from_id(history_id)
+            last_index = len(history.iterations) - 1
+            response = view_history_tool_func(history_id, start=last_index, end=last_index)
+        else:
+            # Return final message only (default behavior)
+            response = extract_heaven_response(result)
         
         if not history_id:
             return f"❌ Failed to get history_id from completion\n\n{debug_info}\n\nDEBUG INFO:\nCompletion result type: {type(result)}\nCompletion result: {repr(result)}\nExtracted response: {repr(response)}\nExtracted history_id: {repr(history_id)}", False
@@ -148,7 +166,6 @@ async def _continue_chat(message: str, agent_config):
 📝 **Title:** {conv_data['title']}
 🔢 **Exchange #{updated_conv['metadata']['total_exchanges']}**
 
-**Your message:** {message}
 **Agent response:** {response}"""
         
         return result_text, True
@@ -277,7 +294,8 @@ async def main():
                 "args_schema": {
                     "title": "str", 
                     "message": "str",
-                    "tags": "str"  # comma-separated
+                    "tags": "str",  # comma-separated
+                    "return_all_results": "bool"  # False = final message only, True = full iteration
                 }
             },
             "continue_chat": {
@@ -285,7 +303,10 @@ async def main():
                 "prompt": "Continue Chat", 
                 "description": "Continue the current active conversation",
                 "function_name": "_continue_chat",
-                "args_schema": {"message": "str"}
+                "args_schema": {
+                    "message": "str",
+                    "return_all_results": "bool"  # False = final message only, True = full iteration
+                }
             },
             "list_conversations": {
                 "type": "Callable",

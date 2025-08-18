@@ -1,0 +1,26 @@
+{
+  "app_id": "base_treeshell",
+  "domain": "system",
+  "role": "assistant",
+  "about_app": "Base TreeShell system configuration",
+  "about_domain": "Core system operations and management",
+  "system_family": "system",
+  "customizations": {
+    "overrides": {
+      "configs/families/system_family.json:system": {
+        "title": "\ud83d\ude80 CUSTOM SYSTEM MENU"
+      }
+    },
+    "additions": {
+      "configs/families/system_family.json:my_custom_node": {
+        "type": "Menu",
+        "title": "\ud83c\udfaf My Custom Feature",
+        "description": "This is a custom node added via dev config",
+        "options": {}
+      }
+    },
+    "exclusions": [
+      "configs/families/conversations_family.json:search"
+    ]
+  }
+}

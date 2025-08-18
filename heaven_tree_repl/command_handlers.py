@@ -56,7 +56,7 @@ class CommandHandlersMixin:
         
         
         # Check existing shortcuts first
-        shortcuts = self.session_vars.get("_shortcuts", {})
+        shortcuts = self.get_shortcuts()
         if target_coord in shortcuts:
             shortcut = shortcuts[target_coord]
             if isinstance(shortcut, dict) and shortcut.get("type") == "jump":
@@ -339,7 +339,7 @@ class CommandHandlersMixin:
                 
             # Check if target is a shortcut first, then resolve to coordinate
             final_coord = target_coord
-            shortcuts = self.session_vars.get("_shortcuts", {})
+            shortcuts = self.get_shortcuts()
             
             if target_coord in shortcuts:
                 shortcut = shortcuts[target_coord]
@@ -352,8 +352,18 @@ class CommandHandlersMixin:
                 else:
                     # Legacy shortcut format
                     final_coord = shortcut
+            else:
+                # Apply semantic resolution for non-shortcut coordinates
+                final_coord = self._resolve_semantic_address(target_coord)
             
-            if final_coord not in self.nodes:
+            # Check in combo_nodes (contains both semantic and numeric nodes)
+            if hasattr(self, 'combo_nodes') and final_coord in self.combo_nodes:
+                # Found in combo_nodes - proceed with execution
+                pass
+            elif final_coord in self.nodes:
+                # Found in regular nodes - proceed with execution
+                pass
+            else:
                 # Check legacy nodes as fallback
                 if not (hasattr(self, 'legacy_nodes') and final_coord in self.legacy_nodes):
                     return {"error": f"Target coordinate {final_coord} not found in step {i+1} (resolved from '{target_coord}')"}
@@ -382,6 +392,7 @@ class CommandHandlersMixin:
         
         return self._build_response({
             "action": "chain",
+            "success": True,
             "steps_executed": len(steps),
             "chain_results": chain_results,
             "final_position": final_target,
@@ -727,6 +738,7 @@ class CommandHandlersMixin:
                 # Get node info
                 node_type = node.get("type", "Unknown")
                 prompt = node.get("prompt", "No prompt")
+                title = node.get("title", "")
                 description = node.get("description", "")
                 
                 # Ontological emoji DSL - each emoji represents a semantic category
@@ -734,17 +746,17 @@ class CommandHandlersMixin:
                     # Domain-specific navigation classifiers
                     if depth == 0:  # Root
                         icon = "🔮"  # Root crystal (special case)
-                    elif "Brain" in prompt:
+                    elif (prompt and "Brain" in prompt) or (title and "Brain" in title):
                         icon = "🧠"  # Brain/AI/knowledge domain
-                    elif "Doc" in prompt or "Help" in prompt:
+                    elif (prompt and ("Doc" in prompt or "Help" in prompt)) or (title and ("Doc" in title or "Help" in title)):
                         icon = "📜"  # Documentation/help domain  
-                    elif "MCP" in prompt or "Generator" in prompt:
+                    elif (prompt and ("MCP" in prompt or "Generator" in prompt)) or (title and ("MCP" in title or "Generator" in title)):
                         icon = "🚀"  # Generation/creation domain
-                    elif "OmniTool" in prompt or "Tool" in prompt:
+                    elif (prompt and ("OmniTool" in prompt or "Tool" in prompt)) or (title and ("OmniTool" in title or "Tool" in title)):
                         icon = "🛠️"  # Tools/utilities domain
-                    elif "Meta" in prompt or "Operations" in prompt:
+                    elif (prompt and ("Meta" in prompt or "Operations" in prompt)) or (title and ("Meta" in title or "Operations" in title)):
                         icon = "🌀"  # Meta/system operations domain
-                    elif "Agent" in prompt:
+                    elif (prompt and "Agent" in prompt) or (title and "Agent" in title):
                         icon = "🤖"  # Agent systems domain
                     else:
                         icon = "🗺️"  # General navigation hub
@@ -857,17 +869,12 @@ class CommandHandlersMixin:
                 # Analyze template for constraints (like pathway analysis)
                 template_analysis = self._analyze_chain_template_simple(chain_template)
                 
-                # Initialize shortcuts storage if not exists
-                if "_shortcuts" not in self.session_vars:
-                    self.session_vars["_shortcuts"] = {}
-                
-                # Store as chain shortcut
+                # Store as chain shortcut in config file only, not session_vars
                 shortcut_data = {
                     "type": "chain",
                     "template": chain_template,
                     "analysis": template_analysis
                 }
-                self.session_vars["_shortcuts"][alias] = shortcut_data
                 
                 # Save to appropriate JSON file
                 self._save_shortcut_to_file(alias, shortcut_data)
@@ -909,16 +916,11 @@ class CommandHandlersMixin:
                 node = self.nodes[coordinate]
             node_prompt = node.get("prompt", "Unknown")
             
-            # Initialize shortcuts storage if not exists
-            if "_shortcuts" not in self.session_vars:
-                self.session_vars["_shortcuts"] = {}
-            
-            # Store as simple jump shortcut
+            # Store as simple jump shortcut in config file only, not session_vars
             shortcut_data = {
                 "type": "jump",
                 "coordinate": coordinate
             }
-            self.session_vars["_shortcuts"][alias] = shortcut_data
             
             # Save to appropriate JSON file
             self._save_shortcut_to_file(alias, shortcut_data)
@@ -952,7 +954,7 @@ class CommandHandlersMixin:
     
     def _handle_list_shortcuts(self) -> dict:
         """List all active shortcuts."""
-        shortcuts = self.session_vars.get("_shortcuts", {})
+        shortcuts = self.get_shortcuts()
         
         if not shortcuts:
             return self._build_response({

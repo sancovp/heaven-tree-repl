@@ -138,7 +138,7 @@ def _render_menu(response: Dict[str, Any]) -> str:
             desc_section += f"\n\n⚠️ If param=SYSTEM_WILL_PREFILL, it can be ignored because the system will prefill it.\nIf signature shows (x, y=SYSTEM_WILL_PREFILL), call it with args={{\"x\": ...}}"
     
     # Get node name (prompt) or fallback to position
-    node_name = response.get("prompt", response.get("position", "Unknown"))
+    node_name = response.get("prompt", response.get("title", response.get("position", "Unknown")))
     
     return f"""# {node_name} Menu
 

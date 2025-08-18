@@ -13,8 +13,10 @@ from .meta_operations import MetaOperationsMixin
 from .pathway_management import PathwayManagementMixin
 from .command_handlers import CommandHandlersMixin
 from .rsi_analysis import RSIAnalysisMixin
+from . import logger
 from .execution_engine import ExecutionEngineMixin
 from .agent_management import AgentTreeReplMixin, UserTreeReplMixin, TreeReplFullstackMixin
+from .system_config_loader_v2 import SystemConfigLoader
 
 
 class TreeShell(
@@ -33,8 +35,18 @@ class TreeShell(
     command handling.
     """
     
-    def __init__(self, graph_config: dict):
+    def __init__(self, graph_config: dict = None):
         """Initialize TreeShell with graph configuration."""
+        # Load base system configs if not provided
+        if graph_config is None:
+            self.system_config_loader = SystemConfigLoader(config_types=["base", "base_zone_config", "base_shortcuts"])
+            graph_config = self.system_config_loader.load_and_validate_configs()
+            
+            # Load families and add to config
+            families_list = graph_config.get('families', [])
+            families = self.system_config_loader.load_families()
+            graph_config['_loaded_families'] = families
+        
         super().__init__(graph_config)
     
     def _manage_pathways(self, final_args: dict) -> tuple:
@@ -52,7 +64,7 @@ class TreeShell(
     def _meta_list_shortcuts(self, final_args: dict) -> tuple:
         """List all active shortcuts with details."""
         # Get shortcuts directly and format properly for display
-        shortcuts = self.session_vars.get("_shortcuts", {})
+        shortcuts = self.get_shortcuts()
         
         if not shortcuts:
             result = "**No shortcuts defined yet.**\n\n" + \
@@ -770,31 +782,42 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
     Agents can create workflows but cannot approve them.
     """
     
-    def __init__(self, graph_config: dict = None, session_id: str = None, approval_callback=None):
-        # Load base config and agent config, then merge with provided config
-        base_config = self._static_load_config("base_default_config_v2.json")
-        agent_config = self._static_load_config("agent_default_config_v2.json")
+    def __init__(self, user_config_path: str = None, session_id: str = None, approval_callback=None):
+        # Store user config path for use in other methods
+        self.user_config_path = user_config_path
         
-        # Start with base config
-        final_config = base_config.copy() if base_config else {}
+        # First load base configs from TreeShell
+        base_config_loader = SystemConfigLoader(config_types=["base", "base_zone_config", "base_shortcuts"])
+        base_config = base_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
-        # Add agent-specific nodes (0.1.* domain)
-        if agent_config and "nodes" in agent_config:
-            if "nodes" not in final_config:
-                final_config["nodes"] = {}
-            final_config["nodes"].update(agent_config["nodes"])
+        # Load agent-specific configs
+        self.system_config_loader = SystemConfigLoader(config_types=["agent", "agent_zone_config", "agent_shortcuts"])
+        agent_config = self.system_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
-        # Merge provided config (app-specific nodes)
-        if graph_config:
-            if "nodes" in graph_config:
-                if "nodes" not in final_config:
-                    final_config["nodes"] = {}
-                final_config["nodes"].update(graph_config["nodes"])
-                # Remove nodes from graph_config to avoid double-updating
-                config_without_nodes = {k: v for k, v in graph_config.items() if k != "nodes"}
-                final_config.update(config_without_nodes)
-            else:
-                final_config.update(graph_config)
+        # Merge base + agent configs (agent configs extend/override base)
+        final_config = base_config.copy()
+        
+        # Merge zones (agent zones extend base zones)
+        if 'zones' in agent_config:
+            if 'zones' not in final_config:
+                final_config['zones'] = {}
+            final_config['zones'].update(agent_config['zones'])
+        
+        # Merge shortcuts (agent shortcuts extend base shortcuts)
+        if 'shortcuts' in agent_config:
+            if 'shortcuts' not in final_config:
+                final_config['shortcuts'] = {}
+            final_config['shortcuts'].update(agent_config['shortcuts'])
+        
+        # Merge other fields (agent config overrides base)
+        for key, value in agent_config.items():
+            if key not in ['zones', 'shortcuts']:
+                final_config[key] = value
+        
+        # Load families with dev customizations
+        families_list = final_config.get('families', [])
+        families = base_config_loader.load_families(user_config_path)
+        final_config['_loaded_families'] = families
         
         # Set default role for agent shells if not specified
         if 'role' not in final_config:
@@ -827,25 +850,26 @@ class AgentTreeShell(TreeShell, AgentTreeReplMixin):
                 with open(file_path, 'r') as f:
                     return json.load(f)
             else:
-                print(f"Warning: Config file not found: {file_path}")
+                logger.warning(f"Config file not found: {file_path}")
                 return {}
         except Exception as e:
-            print(f"Error loading config from {filename}: {e}")
+            logger.error(f"Error loading config from {filename}: {e}")
             return {}
     
     def _load_shortcuts(self) -> None:
-        """Load base + agent shortcuts."""
-        shortcuts = {}
-        
-        # Load base shortcuts
-        base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
-        if base_shortcuts:
-            shortcuts.update(base_shortcuts)
-        
-        # Load agent shortcuts
-        agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
-        if agent_shortcuts:
-            shortcuts.update(agent_shortcuts)
+        """Load base + agent shortcuts using SystemConfigLoader."""
+        if hasattr(self, 'system_config_loader'):
+            user_config_path = getattr(self, 'user_config_path', None)
+            shortcuts = self.system_config_loader.load_shortcuts(dev_config_path=user_config_path)
+        else:
+            # Fallback for backward compatibility
+            shortcuts = {}
+            base_shortcuts = self._load_shortcuts_file("system_base_shortcuts.json")
+            if base_shortcuts:
+                shortcuts.update(base_shortcuts)
+            agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
+            if agent_shortcuts:
+                shortcuts.update(agent_shortcuts)
         
         # Store in session vars
         self.session_vars["_shortcuts"] = shortcuts
@@ -872,18 +896,44 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
     Humans can launch agents and approve/reject their workflows.
     """
     
-    def __init__(self, config: dict = None, parent_approval_callback=None):
-        # Load user config which specifies families to load
-        user_config = self._static_load_config("user_default_config_v2.json")
+    def __init__(self, user_config_path: str = None, parent_approval_callback=None):
+        # Store user config path for use in other methods
+        self.user_config_path = user_config_path
         
-        # Start with user config as base
-        final_config = user_config.copy() if user_config else {}
+        # First load base configs from TreeShell
+        base_config_loader = SystemConfigLoader(config_types=["base", "base_zone_config"])
+        base_config = base_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
-        # Merge provided config (app-specific customization)
-        if config:
-            final_config.update(config)
+        # Load user-specific configs
+        self.system_config_loader = SystemConfigLoader(config_types=["base", "base_shortcuts", "user", "user_zone_config", "user_shortcuts"])
+        user_config = self.system_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
-        # Initialize with family-based config (TreeShellBase will handle family loading)
+        # Merge base + user configs (user configs extend/override base)
+        final_config = base_config.copy()
+        
+        # Merge zones (user zones extend base zones)
+        if 'zones' in user_config:
+            if 'zones' not in final_config:
+                final_config['zones'] = {}
+            final_config['zones'].update(user_config['zones'])
+        
+        # Merge shortcuts (user shortcuts extend base shortcuts)
+        if 'shortcuts' in user_config:
+            if 'shortcuts' not in final_config:
+                final_config['shortcuts'] = {}
+            final_config['shortcuts'].update(user_config['shortcuts'])
+        
+        # Merge other fields (user config overrides base)
+        for key, value in user_config.items():
+            if key not in ['zones', 'shortcuts']:
+                final_config[key] = value
+        
+        # Load families with dev customizations
+        families_list = final_config.get('families', [])
+        families = base_config_loader.load_families(user_config_path)
+        final_config['_loaded_families'] = families
+        
+        # Initialize with merged config
         TreeShell.__init__(self, final_config)
         self.__init_user_features__(parent_approval_callback)
         
@@ -907,28 +957,14 @@ class UserTreeShell(TreeShell, UserTreeReplMixin):
                 with open(file_path, 'r') as f:
                     return json.load(f)
             else:
-                print(f"Warning: Config file not found: {file_path}")
+                logger.warning(f"Config file not found: {file_path}")
                 return {}
         except Exception as e:
-            print(f"Error loading config from {filename}: {e}")
+            logger.error(f"Error loading config from {filename}: {e}")
             return {}
     
-    def _load_shortcuts(self) -> None:
-        """Load base + user shortcuts."""
-        shortcuts = {}
-        
-        # Load base shortcuts
-        base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
-        if base_shortcuts:
-            shortcuts.update(base_shortcuts)
-        
-        # Load user shortcuts
-        user_shortcuts = self._load_shortcuts_file("system_user_shortcuts.json")
-        if user_shortcuts:
-            shortcuts.update(user_shortcuts)
-        
-        # Store in session vars
-        self.session_vars["_shortcuts"] = shortcuts
+    # UserTreeShell inherits _load_shortcuts from TreeShellBase
+    # No override needed - SystemConfigLoader handles all config_types automatically
     
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
         """Save shortcut to user_shortcuts.json for user-specific shortcuts."""
@@ -950,32 +986,18 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
     Complete fullstack TreeShell supporting nested human-agent interactions.
     """
     
-    def __init__(self, user_config: dict = None, agent_config: dict = None, base_config: dict = None, parent_approval_callback=None):
-        # Load all three config layers and merge them
-        base_cfg = base_config if base_config else self._static_load_config("base_default_config_v2.json")
-        agent_cfg = agent_config if agent_config else self._static_load_config("agent_default_config_v2.json")
-        user_cfg = user_config if user_config else self._static_load_config("user_default_config.json")
+    def __init__(self, user_config_path: str = None, parent_approval_callback=None):
+        # Store user config path for use in other methods
+        self.user_config_path = user_config_path
         
-        # Start with base config
-        final_config = base_cfg.copy() if base_cfg else {}
+        # Load all configs: base + agent + user (fullstack has everything)
+        self.system_config_loader = SystemConfigLoader(config_types=["base", "agent", "user", "base_zone_config", "agent_zone_config", "user_zone_config", "base_shortcuts", "agent_shortcuts", "user_shortcuts"])
+        final_config = self.system_config_loader.load_and_validate_configs(dev_config_path=user_config_path)
         
-        # Add agent-specific nodes (0.1.* domain)
-        if agent_cfg and "nodes" in agent_cfg:
-            if "nodes" not in final_config:
-                final_config["nodes"] = {}
-            final_config["nodes"].update(agent_cfg["nodes"])
-        
-        # Add user-specific nodes (0.3.*, 0.4.*)
-        if user_cfg and "nodes" in user_cfg:
-            if "nodes" not in final_config:
-                final_config["nodes"] = {}
-            final_config["nodes"].update(user_cfg["nodes"])
-            
-        # Update other config fields from user config (user config takes precedence)
-        if user_cfg:
-            for key, value in user_cfg.items():
-                if key != "nodes":
-                    final_config[key] = value
+        # Load families with dev customizations
+        families_list = final_config.get('families', [])
+        families = self.system_config_loader.load_families(user_config_path)
+        final_config['_loaded_families'] = families
         
         # Set default role for fullstack shells if not specified
         if 'role' not in final_config:
@@ -1003,30 +1025,29 @@ class FullstackTreeShell(UserTreeShell, TreeReplFullstackMixin):
                 with open(file_path, 'r') as f:
                     return json.load(f)
             else:
-                print(f"Warning: Config file not found: {file_path}")
+                logger.warning(f"Config file not found: {file_path}")
                 return {}
         except Exception as e:
-            print(f"Error loading config from {filename}: {e}")
+            logger.error(f"Error loading config from {filename}: {e}")
             return {}
     
     def _load_shortcuts(self) -> None:
-        """Load base + agent + user shortcuts (all layers)."""
-        shortcuts = {}
-        
-        # Load base shortcuts
-        base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
-        if base_shortcuts:
-            shortcuts.update(base_shortcuts)
-        
-        # Load agent shortcuts
-        agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
-        if agent_shortcuts:
-            shortcuts.update(agent_shortcuts)
-        
-        # Load user shortcuts
-        user_shortcuts = self._load_shortcuts_file("system_user_shortcuts.json")
-        if user_shortcuts:
-            shortcuts.update(user_shortcuts)
+        """Load base + agent + user shortcuts (all layers) using SystemConfigLoader."""
+        if hasattr(self, 'system_config_loader'):
+            user_config_path = getattr(self, 'user_config_path', None)
+            shortcuts = self.system_config_loader.load_shortcuts(dev_config_path=user_config_path)
+        else:
+            # Fallback for backward compatibility
+            shortcuts = {}
+            base_shortcuts = self._load_shortcuts_file("system_base_shortcuts.json")
+            if base_shortcuts:
+                shortcuts.update(base_shortcuts)
+            agent_shortcuts = self._load_shortcuts_file("system_agent_shortcuts.json")
+            if agent_shortcuts:
+                shortcuts.update(agent_shortcuts)
+            user_shortcuts = self._load_shortcuts_file("system_user_shortcuts.json")
+            if user_shortcuts:
+                shortcuts.update(user_shortcuts)
         
         # Store in session vars
         self.session_vars["_shortcuts"] = shortcuts

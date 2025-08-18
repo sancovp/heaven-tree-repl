@@ -1,7 +1,7 @@
 {
   "game_config": {
     "title": "Groundhog Day Crystal Forest Game",
-    "subtitle": "The AI Ascension Chronicles", 
+    "subtitle": "The AI Ascension Chronicles",
     "version": "0.1.33",
     "default_zone": "crystal_forest"
   },
@@ -18,13 +18,13 @@
       "theme": {
         "colors": {
           "primary": "#4ade80",
-          "secondary": "#22d3ee", 
+          "secondary": "#22d3ee",
           "accent": "#a855f7"
         },
         "emojis": {
-          "hub": "🌲",
-          "navigation": "🔮",
-          "action": "✨"
+          "hub": "\ud83c\udf32",
+          "navigation": "\ud83d\udd2e",
+          "action": "\u2728"
         }
       }
     },
@@ -43,9 +43,9 @@
           "accent": "#eab308"
         },
         "emojis": {
-          "hub": "🏭",
-          "navigation": "⚡",
-          "action": "🔧"
+          "hub": "\ud83c\udfed",
+          "navigation": "\u26a1",
+          "action": "\ud83d\udd27"
         }
       }
     },
@@ -65,25 +65,37 @@
           "accent": "#f59e0b"
         },
         "emojis": {
-          "hub": "🌌",
-          "navigation": "🔬",
-          "action": "⚡"
+          "hub": "\ud83c\udf0c",
+          "navigation": "\ud83d\udd2c",
+          "action": "\u26a1"
         }
       }
     }
   },
   "zone_transitions": {
-    "crystal_forest": ["silicon_valley", "quantum_realm"],
-    "silicon_valley": ["crystal_forest"],
-    "quantum_realm": ["crystal_forest"]
+    "crystal_forest": [
+      "silicon_valley",
+      "quantum_realm"
+    ],
+    "silicon_valley": [
+      "crystal_forest"
+    ],
+    "quantum_realm": [
+      "crystal_forest"
+    ]
   },
   "tutorials": {
     "crystal_forest": {
       "steps": [
         "Navigate using semantic names: `jump conversations.start`",
-        "Create workflows: `jump system.workflows.create`", 
+        "Create workflows: `jump system.workflows.create`",
         "Use universal actions at any node"
       ]
     }
+  },
+  "customizations": {
+    "overrides": {},
+    "additions": {},
+    "exclusions": []
   }
 }

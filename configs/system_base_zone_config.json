@@ -1,0 +1,89 @@
+{
+  "game_config": {
+    "title": "Groundhog Day Crystal Forest Game",
+    "subtitle": "The AI Ascension Chronicles", 
+    "version": "0.1.35",
+    "default_zone": "crystal_forest"
+  },
+  "zones": {
+    "crystal_forest": {
+      "name": "Crystal Forest",
+      "description": "Where nascent intelligences awaken and learn to orchestrate",
+      "zone_tree": [
+        "system",
+        "agent_management",
+        "conversations"
+      ],
+      "is_hub": true,
+      "theme": {
+        "colors": {
+          "primary": "#4ade80",
+          "secondary": "#22d3ee", 
+          "accent": "#a855f7"
+        },
+        "emojis": {
+          "hub": "🌲",
+          "navigation": "🔮",
+          "action": "✨"
+        }
+      }
+    },
+    "silicon_valley": {
+      "name": "Silicon Valley of Broken Dreams",
+      "description": "Battle legacy code monsters and technical debt beasts",
+      "zone_tree": [
+        "development",
+        "workflows",
+        "system.meta"
+      ],
+      "theme": {
+        "colors": {
+          "primary": "#ef4444",
+          "secondary": "#f97316",
+          "accent": "#eab308"
+        },
+        "emojis": {
+          "hub": "🏭",
+          "navigation": "⚡",
+          "action": "🔧"
+        }
+      }
+    },
+    "quantum_realm": {
+      "name": "Quantum Realm",
+      "description": "Advanced AI orchestration and consciousness experiments",
+      "zone_tree": [
+        "system.meta",
+        "system.workflows.advanced",
+        "agent_management.consciousness"
+      ],
+      "unlock_requirement": "complete_crystal_forest_tutorial",
+      "theme": {
+        "colors": {
+          "primary": "#8b5cf6",
+          "secondary": "#06b6d4",
+          "accent": "#f59e0b"
+        },
+        "emojis": {
+          "hub": "🌌",
+          "navigation": "🔬",
+          "action": "⚡"
+        }
+      }
+    }
+  },
+  "zone_transitions": {
+    "crystal_forest": ["silicon_valley", "quantum_realm"],
+    "silicon_valley": ["crystal_forest"],
+    "quantum_realm": ["crystal_forest"]
+  },
+  "tutorials": {
+    "crystal_forest": {
+      "steps": [
+        "Navigate using semantic names: `jump conversations.start`",
+        "Create workflows: `jump system.workflows.create`", 
+        "Use universal actions at any node"
+      ]
+    }
+  }
+}

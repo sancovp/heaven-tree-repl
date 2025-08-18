@@ -147,7 +147,7 @@ class ExecutionEngineMixin:
             
             # If function not found in registries, try to import it
             if not async_function and not sync_function:
-                if "import_path" in node and "import_object" in node:
+                if node.get("import_path") and node.get("import_object"):
                     result_detail, import_success = self._process_callable_node(node, node_coord)
                     if not import_success:
                         return {"error": f"Failed to import function: {result_detail}"}, False
@@ -449,7 +449,7 @@ class ExecutionEngineMixin:
             return self._handle_set(args_str)
         else:
             # Check if this is a shortcut command
-            shortcuts = self.session_vars.get("_shortcuts", {})
+            shortcuts = self.get_shortcuts()
             if cmd in shortcuts:
                 shortcut = shortcuts[cmd]
                 

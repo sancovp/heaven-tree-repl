@@ -10,6 +10,8 @@ import uuid
 import os
 from typing import Dict, List, Any, Optional, Tuple
 
+from . import logger
+
 
 class TreeShellBase:
     """
@@ -30,15 +32,23 @@ class TreeShellBase:
         self.async_functions = {}
         self.sync_functions = {}
         
-        # Load zone config from library first to get version for HEAVEN_DATA_DIR
-        self.zone_config = self._load_library_config_file("zone_config.json")
+        # Get zone config from graph_config if provided by SystemConfigLoader, otherwise load directly
+        if 'zones' in graph_config:
+            # Use zone config from SystemConfigLoader (preferred)
+            self.zone_config = {'zones': graph_config['zones']}
+        else:
+            # Fallback to direct loading for backward compatibility
+            self.zone_config = self._load_library_config_file("zone_config.json")
         
         # Initialize HEAVEN_DATA_DIR with correct version
         self._initialize_heaven_data_dir()
         
-        # Now reload all configs from HEAVEN_DATA_DIR (user configs take precedence)
-        self.nav_config = self._load_config_file("nav_config.json")
-        self.zone_config = self._load_config_file("zone_config.json")  # Reload to get user version if exists
+        # Get nav config from graph_config if provided, otherwise load directly
+        if 'nav_config' in graph_config:
+            self.nav_config = graph_config['nav_config']
+        else:
+            # Fallback to direct loading for backward compatibility
+            self.nav_config = self._load_config_file("nav_config.json")
         
         # Load family and navigation configurations
         self.family_mappings = {}  # family_name -> nav_coordinate mapping
@@ -68,9 +78,6 @@ class TreeShellBase:
         # Live session state - persists objects during session
         self.session_vars = {}
         self.execution_history = []
-        
-        # Load shortcuts
-        self._load_shortcuts()
         
         # Pathway recording - enhanced system
         self.recording_pathway = False
@@ -117,9 +124,13 @@ class TreeShellBase:
         
         # Load session state after all initialization is complete
         self._load_session_state()
+        
+        # Load shortcuts AFTER session state so they don't get overridden
+        self._load_shortcuts()
     
     def _build_family_mappings(self) -> None:
         """Build family name to coordinate mappings from nav config."""
+        logger.debug(f"_build_family_mappings called, nav_config: {self.nav_config}")
         if self.nav_config and "nav_tree_order" in self.nav_config:
             nav_tree_order = self.nav_config["nav_tree_order"]
             
@@ -151,32 +162,17 @@ class TreeShellBase:
     def _load_family_configs(self) -> dict:
         """Load all family configurations from the families directory."""
         import os
+        
+        # Check if families were pre-loaded by SystemConfigLoader (with dev customizations)
+        if hasattr(self, 'graph') and '_loaded_families' in self.graph:
+            # Use pre-loaded families with dev customizations applied
+            families = self.graph['_loaded_families']
+            return families
+        
+        # Fallback to direct library loading only (no HEAVEN_DATA_DIR family loading)
         families = {}
         
-        # First, try to load from user's HEAVEN_DATA_DIR
-        heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR')
-        if heaven_data_dir:
-            version = self._get_safe_version()
-            app_data_dir = os.path.join(heaven_data_dir, f"{self.app_id}_{version}")
-            user_families_dir = os.path.join(app_data_dir, "configs", "families")
-            
-            if os.path.exists(user_families_dir):
-                try:
-                    for filename in os.listdir(user_families_dir):
-                        if filename.endswith("_family.json"):
-                            family_name = filename.replace("_family.json", "")
-                            family_path = os.path.join(user_families_dir, filename)
-                            try:
-                                with open(family_path, 'r') as f:
-                                    family_config = json.load(f)
-                                    families[family_name] = family_config
-                                    # print(f"Debug: Loaded user family '{family_name}' with {len(family_config.get('nodes', {}))} nodes")
-                            except Exception as e:
-                                print(f"Error loading user family config {filename}: {e}")
-                except Exception as e:
-                    print(f"Error reading user families directory: {e}")
-        
-        # Fall back to library families for any not found in user directory
+        # Load from library families directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
         library_families_dir = os.path.join(os.path.dirname(current_dir), "configs", "families")
         
@@ -185,18 +181,16 @@ class TreeShellBase:
                 for filename in os.listdir(library_families_dir):
                     if filename.endswith("_family.json"):
                         family_name = filename.replace("_family.json", "")
-                        # Only load if not already loaded from user directory
-                        if family_name not in families:
-                            family_path = os.path.join(library_families_dir, filename)
-                            try:
-                                with open(family_path, 'r') as f:
-                                    family_config = json.load(f)
-                                    families[family_name] = family_config
-                                    # print(f"Debug: Loaded library family '{family_name}' with {len(family_config.get('nodes', {}))} nodes")
-                            except Exception as e:
-                                print(f"Error loading library family config {filename}: {e}")
+                        family_path = os.path.join(library_families_dir, filename)
+                        try:
+                            with open(family_path, 'r') as f:
+                                family_config = json.load(f)
+                                families[family_name] = family_config
+                                # print(f"Debug: Loaded library family '{family_name}' with {len(family_config.get('nodes', {}))} nodes")
+                        except Exception as e:
+                            logger.error(f"Error loading library family config {filename}: {e}")
             except Exception as e:
-                print(f"Error reading library families directory: {e}")
+                logger.error(f"Error reading library families directory: {e}")
         
         return families
     
@@ -231,6 +225,9 @@ class TreeShellBase:
         # Get the nav coordinate for this family, using parent chain resolution
         nav_coord = self._resolve_family_nav_coordinate(family_name, family_config, all_families)
         has_nav_coord = bool(nav_coord) and nav_coord in self.family_mappings.values()
+        
+        logger.debug(f"Family '{family_name}' - nav_coord: '{nav_coord}', has_nav_coord: {has_nav_coord}")
+        logger.debug(f"family_mappings.values(): {list(self.family_mappings.values())}")
         
         # Process each node once and create address mappings
         for node_id, node_data in family_nodes.items():
@@ -285,6 +282,9 @@ class TreeShellBase:
                         nav_address = f"{nav_coord}.{node_id}"
                 
                 address_lookup[nav_address] = processed_node
+                logger.debug(f"Added nav coordinate '{nav_address}' for node '{node_id}'")
+            else:
+                logger.debug(f"SKIPPED nav coordinate for node '{node_id}' in family '{family_name}' (no nav coord)")
         
         return address_lookup
     
@@ -422,16 +422,16 @@ class TreeShellBase:
         return combo_nodes
 
     def _load_shortcuts(self) -> None:
-        """Load shortcuts from JSON files. Override in subclasses for different layers."""
-        shortcuts = {}
-        
-        # Load base shortcuts (always loaded)
-        base_shortcuts = self._load_shortcuts_file("base_shortcuts.json")
-        if base_shortcuts:
-            shortcuts.update(base_shortcuts)
-        
-        # Store in session vars
-        self.session_vars["_shortcuts"] = shortcuts
+        """Load shortcuts from SystemConfigLoader only. Override in subclasses for different layers."""
+        # Shortcuts are loaded directly from SystemConfigLoader when needed
+        # They are NOT stored in session_vars as they come from JSON config files
+        pass
+    
+    def get_shortcuts(self) -> dict:
+        """Get shortcuts directly from SystemConfigLoader, not from session_vars."""
+        if hasattr(self, 'system_config_loader'):
+            return self.system_config_loader.load_shortcuts(dev_config_path=None)
+        return {}
     
     def _load_library_config_file(self, filename: str) -> dict:
         """Load configuration from library only (not HEAVEN_DATA_DIR)."""
@@ -450,7 +450,7 @@ class TreeShellBase:
             else:
                 return {}
         except Exception as e:
-            print(f"Error loading library config from {filename}: {e}")
+            logger.error(f"Error loading library config from {filename}: {e}")
             return {}
     
     def _load_config_file(self, filename: str) -> dict:
@@ -471,7 +471,7 @@ class TreeShellBase:
                     with open(user_config_path, 'r') as f:
                         return json.load(f)
                 except Exception as e:
-                    print(f"Error loading user config from {user_config_path}: {e}")
+                    logger.error(f"Error loading user config from {user_config_path}: {e}")
                     # Fall through to library default
         
         # Fall back to library's default config
@@ -487,7 +487,7 @@ class TreeShellBase:
                 # print(f"Warning: Config file not found: {file_path}")
                 return {}
         except Exception as e:
-            print(f"Error loading config from {filename}: {e}")
+            logger.error(f"Error loading config from {filename}: {e}")
             return {}
     
     def _load_shortcuts_file(self, filename: str) -> dict:
@@ -497,9 +497,9 @@ class TreeShellBase:
         
         # Get the directory where this module is located
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        # Go up one level to heaven-tree-repl directory, then into shortcuts
-        shortcuts_dir = os.path.join(os.path.dirname(current_dir), "shortcuts")
-        file_path = os.path.join(shortcuts_dir, filename)
+        # Go up one level to heaven-tree-repl directory, then into configs
+        configs_dir = os.path.join(os.path.dirname(current_dir), "configs")
+        file_path = os.path.join(configs_dir, filename)
         
         try:
             if os.path.exists(file_path):
@@ -509,7 +509,7 @@ class TreeShellBase:
                 # print(f"Warning: Shortcuts file not found: {file_path}")
                 return {}
         except Exception as e:
-            print(f"Error loading shortcuts from {filename}: {e}")
+            logger.error(f"Error loading shortcuts from {filename}: {e}")
             return {}
     
     def _save_shortcut_to_file(self, alias: str, shortcut_data: dict) -> None:
@@ -543,7 +543,7 @@ class TreeShellBase:
                 json.dump(existing_shortcuts, f, indent=2)
                 
         except Exception as e:
-            print(f"Error saving shortcut to {filename}: {e}")
+            logger.error(f"Error saving shortcut to {filename}: {e}")
     
     def register_async_function(self, function_name: str, async_func) -> None:
         """Register an async function for use in tree repl."""
@@ -582,7 +582,7 @@ class TreeShellBase:
         nodes = {}
         
         # Load base configuration for metadata and system family reference
-        base_config = self._load_config_file("base_default_config_v2.json")
+        base_config = self._load_config_file("system_base_config.json")
         system_family_name = "system"  # default
         if base_config and "system_family" in base_config:
             system_family_name = base_config["system_family"]
@@ -594,6 +594,7 @@ class TreeShellBase:
             "prompt": "Main Menu", 
             "description": f"Root menu for {self.app_id}",
             "signature": "menu() -> navigation_options",
+            "domain": "main_menu",
             "options": {}  # Will be auto-generated from families
         }
         # print("Debug: Created root node, families will populate the rest")
@@ -608,9 +609,9 @@ class TreeShellBase:
             family_nodes = self._convert_family_to_coordinates(family_config, family_name, families)
             nodes.update(family_nodes)
             total_family_nodes += len(family_nodes)
-            # print(f"Debug: Added {len(family_nodes)} nodes from '{family_name}' family")
+            logger.debug(f"Added {len(family_nodes)} nodes from '{family_name}' family")
         
-        # print(f"Debug: Total family nodes loaded: {total_family_nodes}")
+        logger.debug(f"Total family nodes loaded: {total_family_nodes}")
         
         # Add zone-based nodes for RPG theming
         if self.zone_mappings:
@@ -779,8 +780,8 @@ class TreeShellBase:
                 # Build position string for current level (e.g., "0", "0.3", "0.3.1", etc.)
                 level_position = '.'.join(parts[:i+1])
                 
-                # Check both numeric_nodes and nodes for domain
-                node = self.numeric_nodes.get(level_position) or self.nodes.get(level_position, {})
+                # Check both nodes and numeric_nodes for domain
+                node = self.nodes.get(level_position) or self.numeric_nodes.get(level_position, {})
                 
                 # Add domain or error message for missing domain
                 if 'domain' in node:
@@ -883,9 +884,8 @@ class TreeShellBase:
         return safe_version
     
     def _initialize_heaven_data_dir(self) -> bool:
-        """Initialize user's HEAVEN_DATA_DIR structure if needed."""
+        """Initialize user's HEAVEN_DATA_DIR structure for session data only."""
         import os
-        import shutil
         import json
         
         heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR')
@@ -900,49 +900,47 @@ class TreeShellBase:
             return True  # Already initialized
         
         try:
-            # Create directory structure
-            os.makedirs(os.path.join(app_data_dir, "configs"), exist_ok=True)
-            os.makedirs(os.path.join(app_data_dir, "configs", "families"), exist_ok=True)
-            os.makedirs(os.path.join(app_data_dir, "shortcuts"), exist_ok=True)
+            # Create directory structure for session data only
+            os.makedirs(os.path.join(app_data_dir, "sessions"), exist_ok=True)
+            os.makedirs(os.path.join(app_data_dir, "pathways"), exist_ok=True)
             os.makedirs(os.path.join(app_data_dir, "data"), exist_ok=True)
             
-            # Copy library's default configs to user directory
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            library_configs_dir = os.path.join(os.path.dirname(current_dir), "configs")
+            # Create dev config directory for user customizations
+            dev_config_dir = os.path.join(app_data_dir, "dev_configs")
+            os.makedirs(dev_config_dir, exist_ok=True)
             
-            # Copy main config files
-            config_files = ["zone_config.json", "nav_config.json", "base_default_config_v2.json"]
-            for config_file in config_files:
-                src = os.path.join(library_configs_dir, config_file)
-                dst = os.path.join(app_data_dir, "configs", config_file)
-                if os.path.exists(src):
-                    shutil.copy2(src, dst)
+            # Create empty dev config templates with correct schema
+            user_config_template = {
+                "override_nodes": {},
+                "add_nodes": {},
+                "exclude_nodes": []
+            }
             
-            # Copy families directory
-            library_families_dir = os.path.join(library_configs_dir, "families")
-            user_families_dir = os.path.join(app_data_dir, "configs", "families")
-            if os.path.exists(library_families_dir):
-                for family_file in os.listdir(library_families_dir):
-                    if family_file.endswith("_family.json"):
-                        src = os.path.join(library_families_dir, family_file)
-                        dst = os.path.join(user_families_dir, family_file)
-                        shutil.copy2(src, dst)
+            # Create all dev config files as empty templates
+            dev_configs = [
+                "dev_base_config.json",
+                "dev_agent_config.json", 
+                "dev_user_config.json",
+                "dev_base_shortcuts.json",
+                "dev_agent_shortcuts.json",
+                "dev_user_shortcuts.json",
+                "dev_base_zone_config.json",
+                "dev_agent_zone_config.json",
+                "dev_user_zone_config.json"
+            ]
             
-            # Copy shortcuts
-            library_shortcuts_dir = os.path.join(os.path.dirname(current_dir), "shortcuts")
-            user_shortcuts_dir = os.path.join(app_data_dir, "shortcuts")
-            if os.path.exists(library_shortcuts_dir):
-                for shortcut_file in os.listdir(library_shortcuts_dir):
-                    if shortcut_file.endswith(".json"):
-                        src = os.path.join(library_shortcuts_dir, shortcut_file)
-                        dst = os.path.join(user_shortcuts_dir, shortcut_file)
-                        shutil.copy2(src, dst)
+            for config_file in dev_configs:
+                config_path = os.path.join(dev_config_dir, config_file)
+                if not os.path.exists(config_path):  # Don't overwrite existing dev configs
+                    with open(config_path, 'w') as f:
+                        json.dump(user_config_template, f, indent=2)
             
-            print(f"Initialized HEAVEN_DATA_DIR for {self.app_id}_{version} at {app_data_dir}")
+            logger.info(f"Initialized HEAVEN_DATA_DIR for {self.app_id}_{version} at {app_data_dir}")
+            logger.info(f"Created dev config templates in {dev_config_dir}")
             return True
             
         except Exception as e:
-            print(f"Error initializing HEAVEN_DATA_DIR: {e}")
+            logger.error(f"Error initializing HEAVEN_DATA_DIR: {e}")
             return False
     
     def _process_callable_node(self, node_data: dict, coordinate: str) -> tuple:
@@ -959,7 +957,7 @@ class TreeShellBase:
         is_async = node_data.get("is_async", False)
         
         # Approach 1: Import from external module
-        if "import_path" in node_data and "import_object" in node_data:
+        if node_data.get("import_path") and node_data.get("import_object"):
             import_path = node_data["import_path"]
             import_object = node_data["import_object"]
             
@@ -1036,7 +1034,7 @@ class TreeShellBase:
         
         # If not found and we have node data, try to import it
         if not function and node:
-            if "import_path" in node and "import_object" in node:
+            if node.get("import_path") and node.get("import_object"):
                 try:
                     import_path = node["import_path"]
                     import_object = node["import_object"]
@@ -1342,10 +1340,13 @@ class TreeShellBase:
         try:
             session_file = self._get_session_file_path(session_id).replace('.json', '.pkl')
             
+            # Exclude config-based data that should reload from JSON every time
+            session_vars_to_save = {k: v for k, v in self.session_vars.items() if k != '_shortcuts'}
+            
             state_data = {
                 "current_position": self.current_position,
                 "stack": self.stack.copy(),
-                "session_vars": self.session_vars.copy(),
+                "session_vars": session_vars_to_save,
                 "execution_history": self.execution_history.copy(),
                 "saved_pathways": self.saved_pathways.copy(),
                 "saved_templates": self.saved_templates.copy(),
@@ -1362,7 +1363,7 @@ class TreeShellBase:
                 pickle.dump(state_data, f)
                 
         except Exception as e:
-            print(f"Warning: Could not save session state: {e}")
+            logger.warning(f"Could not save session state: {e}")
     
     def _load_session_state(self, session_id=None):
         """Load session state from pickle file if it exists, gracefully handling errors."""
@@ -1389,8 +1390,10 @@ class TreeShellBase:
             self.saved_templates = state_data.get("saved_templates", {})
             self.graph_ontology.update(state_data.get("graph_ontology", {}))
             
-            # Handle session_vars with error recovery
+            # Handle session_vars with error recovery, excluding config-based data
             raw_session_vars = state_data.get("session_vars", {})
+            # Remove config-based data that should reload from JSON every time
+            raw_session_vars.pop('_shortcuts', None)
             self.session_vars = self._clean_session_vars(raw_session_vars)
             
             # Optional chain state
@@ -1400,7 +1403,7 @@ class TreeShellBase:
                 self.step_counter = state_data.get("step_counter", 0)
                 
         except Exception as e:
-            print(f"Warning: Could not load session state, starting fresh: {e}")
+            logger.warning(f"Could not load session state, starting fresh: {e}")
     
     def _clean_session_vars(self, raw_session_vars: dict) -> dict:
         """Clean session vars by removing any objects that can't be properly accessed."""
@@ -1417,10 +1420,10 @@ class TreeShellBase:
                 cleaned_vars[key] = value
             except Exception as e:
                 removed_keys.append(key)
-                print(f"Warning: Removed corrupted session variable '{key}': {e}")
+                logger.warning(f"Removed corrupted session variable '{key}': {e}")
         
         if removed_keys:
-            print(f"Session recovery: Removed {len(removed_keys)} corrupted variables, kept {len(cleaned_vars)} good ones")
+            logger.info(f"Session recovery: Removed {len(removed_keys)} corrupted variables, kept {len(cleaned_vars)} good ones")
         
         return cleaned_vars
     
@@ -1437,10 +1440,10 @@ class TreeShellBase:
             
             # Remove old JSON file after successful migration
             os.remove(json_file)
-            print(f"Migrated session from JSON to pickle: {pickle_file}")
+            logger.info(f"Migrated session from JSON to pickle: {pickle_file}")
             
         except Exception as e:
-            print(f"Warning: Could not migrate JSON session file: {e}")
+            logger.warning(f"Could not migrate JSON session file: {e}")
     
     async def main(self):
         """
