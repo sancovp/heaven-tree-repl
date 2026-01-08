@@ -1149,3 +1149,85 @@ Based on the terminology and concepts in that previous answer, what additional d
         except Exception as e:
             logger.error(f"Error in _meta_visualize_tree: {e}")
             return {"error": f"Failed to generate FULL visualization: {e}"}, False
+
+# ============ HUD OPERATIONS ============
+
+def _hud_list(shell) -> str:
+    """List current HUD composition."""
+    hud_config = shell.state.get("hud_config", [])
+    if not hud_config:
+        return "HUD is empty. Use hud_add_node or hud_add_decorator to add items."
+    
+    result = "=== HUD Composition ===\n"
+    for i, item in enumerate(hud_config):
+        item_type = item.get("type", "unknown")
+        if item_type == "node":
+            result += f"[{i}] NODE: {item.get('address', 'no address')}\n"
+        elif item_type == "freestyle":
+            content = item.get("content", "")
+            preview = content[:50] + "..." if len(content) > 50 else content
+            result += f"[{i}] DECORATOR: {repr(preview)}\n"
+    return result
+
+
+def _hud_add_node(shell, address: str, position: int = -1) -> str:
+    """Add node reference to HUD."""
+    if "hud_config" not in shell.state:
+        shell.state["hud_config"] = []
+    
+    item = {"type": "node", "address": address}
+    
+    if position == -1 or position >= len(shell.state["hud_config"]):
+        shell.state["hud_config"].append(item)
+        pos = len(shell.state["hud_config"]) - 1
+    else:
+        shell.state["hud_config"].insert(position, item)
+        pos = position
+    
+    return f"Added node '{address}' to HUD at position {pos}"
+
+
+def _hud_add_decorator(shell, text: str, position: int = -1) -> str:
+    """Add decorator text to HUD."""
+    if "hud_config" not in shell.state:
+        shell.state["hud_config"] = []
+    
+    item = {"type": "freestyle", "content": text}
+    
+    if position == -1 or position >= len(shell.state["hud_config"]):
+        shell.state["hud_config"].append(item)
+        pos = len(shell.state["hud_config"]) - 1
+    else:
+        shell.state["hud_config"].insert(position, item)
+        pos = position
+    
+    return f"Added decorator to HUD at position {pos}"
+
+
+def _hud_remove(shell, index: int) -> str:
+    """Remove item from HUD by index."""
+    hud_config = shell.state.get("hud_config", [])
+    if index < 0 or index >= len(hud_config):
+        return f"Invalid index {index}. HUD has {len(hud_config)} items."
+    
+    removed = shell.state["hud_config"].pop(index)
+    return f"Removed {removed.get('type')} from position {index}"
+
+
+def _hud_reorder(shell, from_index: int, to_index: int) -> str:
+    """Move HUD item from one position to another."""
+    hud_config = shell.state.get("hud_config", [])
+    if from_index < 0 or from_index >= len(hud_config):
+        return f"Invalid from_index {from_index}"
+    if to_index < 0 or to_index >= len(hud_config):
+        return f"Invalid to_index {to_index}"
+    
+    item = shell.state["hud_config"].pop(from_index)
+    shell.state["hud_config"].insert(to_index, item)
+    return f"Moved item from {from_index} to {to_index}"
+
+
+def _hud_clear(shell) -> str:
+    """Clear all HUD items."""
+    shell.state["hud_config"] = []
+    return "HUD cleared"

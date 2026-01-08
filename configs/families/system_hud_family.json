@@ -1,0 +1,81 @@
+{
+  "family_root": "system_hud",
+  "parent": "system_meta",
+  "domain": "system_hud",
+  "description": "HUD composition - declare which nodes display on the HUD with optional decorators",
+  "nodes": {
+    "system_hud": {
+      "type": "Menu",
+      "prompt": "HUD Builder",
+      "description": "Compose HUD by adding node references and decorator text",
+      "signature": "hud_builder() -> hud_operations",
+      "options": {
+        "1": "hud_list",
+        "2": "hud_add_node",
+        "3": "hud_add_decorator",
+        "4": "hud_remove",
+        "5": "hud_reorder",
+        "6": "hud_clear"
+      }
+    },
+    "hud_list": {
+      "type": "Callable",
+      "prompt": "List HUD",
+      "description": "Show current HUD composition - all nodes and decorators in order",
+      "signature": "hud_list() -> list",
+      "function_name": "_hud_list",
+      "args_schema": {}
+    },
+    "hud_add_node": {
+      "type": "Callable",
+      "prompt": "Add Node to HUD",
+      "description": "Add a node reference to HUD using semantic address (family_file.json:node_name)",
+      "signature": "hud_add_node(address: str, position: int = -1) -> bool",
+      "function_name": "_hud_add_node",
+      "args_schema": {
+        "address": "str",
+        "position": "int"
+      }
+    },
+    "hud_add_decorator": {
+      "type": "Callable",
+      "prompt": "Add Decorator",
+      "description": "Add freestyle decorator text (separators, headers, etc) to HUD",
+      "signature": "hud_add_decorator(text: str, position: int = -1) -> bool",
+      "function_name": "_hud_add_decorator",
+      "args_schema": {
+        "text": "str",
+        "position": "int"
+      }
+    },
+    "hud_remove": {
+      "type": "Callable",
+      "prompt": "Remove from HUD",
+      "description": "Remove item from HUD by index",
+      "signature": "hud_remove(index: int) -> bool",
+      "function_name": "_hud_remove",
+      "args_schema": {
+        "index": "int"
+      }
+    },
+    "hud_reorder": {
+      "type": "Callable",
+      "prompt": "Reorder HUD",
+      "description": "Move HUD item from one position to another",
+      "signature": "hud_reorder(from_index: int, to_index: int) -> bool",
+      "function_name": "_hud_reorder",
+      "args_schema": {
+        "from_index": "int",
+        "to_index": "int"
+      }
+    },
+    "hud_clear": {
+      "type": "Callable",
+      "prompt": "Clear HUD",
+      "description": "Remove all items from HUD",
+      "signature": "hud_clear() -> bool",
+      "function_name": "_hud_clear",
+      "args_schema": {}
+    }
+  }
+}
