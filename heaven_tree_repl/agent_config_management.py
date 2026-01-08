@@ -272,8 +272,13 @@ def copy_existing(name: str) -> Dict[str, Any]:
         
         config_file = Path(heaven_data_dir) / 'agents' / name / f"{name}_config.py"
         
+        # First try local config, then library config
         if not config_file.exists():
-            return {"success": False, "message": f"Config '{name}' not found at {config_file}"}
+            lib_config_file = _get_library_config_path(name)
+            if lib_config_file and lib_config_file.exists():
+                config_file = lib_config_file
+            else:
+                return {"success": False, "message": f"Config '{name}' not found in local or library agents"}
         
         # Load the config (simplified - would use proper Python module loading)
         # For now, just reset and set name
@@ -284,6 +289,34 @@ def copy_existing(name: str) -> Dict[str, Any]:
         
     except Exception as e:
         return {"success": False, "message": f"Failed to load config: {str(e)}"}
+
+def _get_library_config_path(name: str) -> Optional[Path]:
+    """Get path to library agent config file, or None if not found."""
+    try:
+        import heaven_base
+        heaven_base_path = os.path.dirname(heaven_base.__file__)
+        lib_config_file = Path(heaven_base_path) / 'agents' / f"{name}_config.py"
+        return lib_config_file if lib_config_file.exists() else None
+    except ImportError:
+        return None
+
+def _get_library_agent_configs() -> List[str]:
+    """Get agent config names from installed heaven-framework library."""
+    try:
+        import heaven_base
+        heaven_base_path = os.path.dirname(heaven_base.__file__)
+        agents_lib_dir = Path(heaven_base_path) / 'agents'
+        
+        configs = []
+        if agents_lib_dir.exists():
+            for config_file in agents_lib_dir.iterdir():
+                if config_file.is_file() and config_file.name.endswith('_config.py'):
+                    # Extract agent name from filename (remove _config.py suffix)
+                    agent_name = config_file.stem.replace('_config', '')
+                    configs.append(agent_name)
+        return configs
+    except ImportError:
+        return []  # heaven_base not installed
 
 def list_saved_configs() -> Dict[str, Any]:
     """List all saved agent configs."""
@@ -303,7 +336,13 @@ def list_saved_configs() -> Dict[str, Any]:
                 if config_file.exists():
                     configs.append(agent_dir.name)
         
-        return {"success": True, "configs": configs, "message": f"Found {len(configs)} saved configs"}
+        # Also scan installed heaven-framework library for agent configs
+        library_configs = _get_library_agent_configs()
+        for agent_name in library_configs:
+            if agent_name not in configs:  # Avoid duplicates
+                configs.append(agent_name)
+        
+        return {"success": True, "configs": sorted(configs), "message": f"Found {len(configs)} saved configs"}
         
     except Exception as e:
         return {"success": False, "message": f"Failed to list configs: {str(e)}"}

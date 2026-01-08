@@ -393,7 +393,7 @@ class TreeShellBase:
                         "args_schema": callable_info.get("args_schema", {})
                     })
                     del processed_node["callable"]
-                
+
                 numeric_nodes[numeric_coord] = processed_node
             
             # Recursively assign coordinates to children
@@ -591,11 +591,12 @@ class TreeShellBase:
         # Create root node only - families will populate the rest
         nodes["0"] = {
             "type": "Menu",
-            "prompt": "Main Menu", 
+            "prompt": "Main Menu",
             "description": f"Root menu for {self.app_id}",
             "signature": "menu() -> navigation_options",
             "domain": "main_menu",
-            "options": {}  # Will be auto-generated from families
+            "options": {},  # Will be auto-generated from families
+            "_source": "base.py:node_0_hardcoded"
         }
         # print("Debug: Created root node, families will populate the rest")
         
@@ -798,6 +799,10 @@ class TreeShellBase:
     
     def _build_response(self, payload: dict) -> dict:
         """Build standard response with current state."""
+        # Get _source from current node
+        current_node = self._get_current_node()
+        node_source = current_node.get("_source", f"coordinate:{self.current_position}") if current_node else f"coordinate:{self.current_position}"
+
         base = {
             "state_id": datetime.datetime.utcnow().isoformat(),
             "position": self.current_position,
@@ -807,7 +812,8 @@ class TreeShellBase:
             "app_id": self.app_id,
             "domain": self._get_domain_chain(),
             "role": self.role,
-            "shortcuts": self.session_vars.get("_shortcuts", {})  # Include shortcuts for game state
+            "shortcuts": self.session_vars.get("_shortcuts", {}),  # Include shortcuts for game state
+            "_source": node_source
         }
         base.update(payload)
         return base
@@ -887,6 +893,7 @@ class TreeShellBase:
         """Initialize user's HEAVEN_DATA_DIR structure for session data only."""
         import os
         import json
+        import shutil
         
         heaven_data_dir = os.environ.get('HEAVEN_DATA_DIR')
         if not heaven_data_dir:
@@ -895,10 +902,14 @@ class TreeShellBase:
         version = self._get_safe_version()
         app_data_dir = os.path.join(heaven_data_dir, f"{self.app_id}_{version}")
         
-        # Check if directory already exists
-        if os.path.exists(app_data_dir):
+        # Check if configs need to be copied (for upgrades from versions before config copying existed)
+        target_configs_dir = os.path.join(app_data_dir, "configs")
+        needs_config_copy = not os.path.exists(target_configs_dir)
+
+        # If directory exists AND has configs, we're done
+        if os.path.exists(app_data_dir) and not needs_config_copy:
             return True  # Already initialized
-        
+
         try:
             # Create directory structure for session data only
             os.makedirs(os.path.join(app_data_dir, "sessions"), exist_ok=True)
@@ -934,7 +945,16 @@ class TreeShellBase:
                 if not os.path.exists(config_path):  # Don't overwrite existing dev configs
                     with open(config_path, 'w') as f:
                         json.dump(user_config_template, f, indent=2)
-            
+
+            # Copy system configs from library to HEAVEN_DATA_DIR
+            # This makes configs "hot" (editable) while preserving per-version state
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            library_configs_dir = os.path.join(os.path.dirname(current_dir), "configs")
+
+            if os.path.exists(library_configs_dir) and needs_config_copy:
+                shutil.copytree(library_configs_dir, target_configs_dir)
+                logger.info(f"Copied system configs to {target_configs_dir}")
+
             logger.info(f"Initialized HEAVEN_DATA_DIR for {self.app_id}_{version} at {app_data_dir}")
             logger.info(f"Created dev config templates in {dev_config_dir}")
             return True

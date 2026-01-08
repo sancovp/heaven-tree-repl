@@ -130,26 +130,22 @@ class DisplayBrief(BaseModel):
     def to_display_string(self) -> str:
         """
         Generate game-aware display string.
-        
+
         Returns:
             Formatted display string with game state
         """
-        if not self.shortcuts:
-            # Fallback to traditional role display
-            if self.role:
-                return f"Role: {self.role}"
-            return ""
-        
+        # Always compute tier/level - returns (1, 1) defaults if no shortcuts
         tier, level = self.compute_tier_and_level()
         role = self.role or "Crystal Miner"
-        
+
         tier_info = f"{tier} (show analytics at {self.analytics_coord})"
-        
+
         # Use dynamic game name from zone_config if available
         dynamic_game_name = self.game_name  # Default fallback
         if self.zone_config and "game_config" in self.zone_config:
             dynamic_game_name = self.zone_config["game_config"].get("title", self.game_name)
-        
+
+        # Always render the full template with whatever data we have
         return self.game_template.replace("{{ game_name }}", dynamic_game_name) \
                                 .replace("{{ tier_info }}", tier_info) \
                                 .replace("{{ level }}", str(level)) \

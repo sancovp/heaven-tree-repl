@@ -6,24 +6,75 @@ import json
 from typing import Dict, Any, Union, List
 from .display_brief import DisplayBrief
 
-def resolve_description(description: Union[str, List[str]]) -> str:
-    """Resolve description as string or HEAVEN blocks array."""
+def resolve_description(description: Union[str, List[str], List[dict]]) -> str:
+    """Resolve description as string or mixed HEAVEN blocks array.
+
+    Supports:
+    - String: returned as-is (freestyle)
+    - List of strings: legacy mode, all treated as references via HeavenAgentConfig
+    - List of dicts: mixed mode, each dict is {"type": "freestyle"|"reference", "content": "..."}
+    """
     if isinstance(description, str):
         return description  # Static string, return as-is
+
     elif isinstance(description, list):
-        try:
-            # Resolve as HEAVEN prompt suffix blocks
-            from heaven_base import HeavenAgentConfig
-            temp_config = HeavenAgentConfig(
-                name="temp",
-                system_prompt="",  # Empty base
-                prompt_suffix_blocks=description
-            )
-            resolved = temp_config.get_system_prompt()
-            return resolved.strip()  # Remove any leading/trailing whitespace
-        except Exception as e:
-            # Fallback to simple concatenation if HEAVEN resolution fails
-            return '\n'.join(str(block) for block in description)
+        if not description:
+            return ""
+
+        # Check if it's mixed mode (list of dicts with type/content)
+        if isinstance(description[0], dict) and "type" in description[0]:
+            try:
+                from heaven_base.tool_utils.prompt_injection_system_vX1 import (
+                    BlockTypeVX1,
+                    PromptBlockDefinitionVX1,
+                    PromptStepDefinitionVX1,
+                    PromptInjectionSystemConfigVX1,
+                    PromptInjectionSystemVX1,
+                )
+                from heaven_base import HeavenAgentConfig
+
+                # Convert dicts to PromptBlockDefinitionVX1
+                blocks = []
+                for item in description:
+                    block_type = BlockTypeVX1.FREESTYLE if item.get("type") == "freestyle" else BlockTypeVX1.REFERENCE
+                    blocks.append(PromptBlockDefinitionVX1(
+                        type=block_type,
+                        content=item.get("content", "")
+                    ))
+
+                # Create single step with all blocks
+                step = PromptStepDefinitionVX1(name="hud", blocks=blocks)
+
+                # Create PIS config
+                agent_config = HeavenAgentConfig(name="renderer", system_prompt="")
+                config = PromptInjectionSystemConfigVX1(
+                    steps=[step],
+                    template_vars={},
+                    agent_config=agent_config
+                )
+
+                # Render
+                pis = PromptInjectionSystemVX1(config)
+                return pis.get_next_prompt() or ""
+
+            except Exception as e:
+                # Fallback: concatenate content fields
+                return '\n'.join(str(item.get("content", "")) for item in description)
+
+        else:
+            # Legacy mode: list of strings, all treated as references
+            try:
+                from heaven_base import HeavenAgentConfig
+                temp_config = HeavenAgentConfig(
+                    name="temp",
+                    system_prompt="",
+                    prompt_suffix_blocks=description
+                )
+                resolved = temp_config.get_system_prompt()
+                return resolved.strip()
+            except Exception as e:
+                return '\n'.join(str(block) for block in description)
+
     else:
         return str(description)  # Fallback for other types
 
@@ -45,7 +96,8 @@ def render_response(response: Dict[str, Any]) -> str:
     role = response.get("role", "assistant")
     
     # Start with crystal ball tree header and position info
-    base_header = f"<<[🔮‍🌳]>> You are now visiting position `{position}` in the {app_id} tree space for the domain: {domain}."
+    node_path = response.get("_source", f"coordinate:{position}")
+    base_header = f"<<[🔮‍🌳]>> You are now visiting position `{position}` in the {app_id} tree space for the domain: {domain}. | 📂 {node_path}"
     
     # Build header with help message for main menu
     help_msg = " | 💡 New here? Use `jump 0.2.6` for Computational Model overview" if position == "0" else ""
