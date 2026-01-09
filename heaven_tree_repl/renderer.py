@@ -159,7 +159,10 @@ def render_response(response: Dict[str, Any]) -> str:
         # Generic response
         content = _render_generic(response)
     
-    return f"{header}\n\n{content}\n>>>"
+    # Add universal nav hint footer
+    nav_hint = "\n💡 Use `nav` to see full tree structure" if position != "0" else ""
+
+    return f"{header}\n\n{content}{nav_hint}\n>>>"
 
 
 def _render_menu(response: Dict[str, Any]) -> str:

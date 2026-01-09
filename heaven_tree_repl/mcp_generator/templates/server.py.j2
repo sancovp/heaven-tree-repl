@@ -41,10 +41,30 @@ class {{ config.get_mcp_server_class_name() }}:
         """Initialize the {{ config.app_name }} MCP server"""
         self.shell = None
         self._initialize_shell()
-    
+
+    def _find_user_config(self, heaven_data_dir: str, library_prefix: str) -> str:
+        """Find user config directory for this library in HEAVEN_DATA_DIR."""
+        try:
+            if not os.path.exists(heaven_data_dir):
+                return None
+            for item in os.listdir(heaven_data_dir):
+                if item.startswith(library_prefix):
+                    item_path = os.path.join(heaven_data_dir, item)
+                    if os.path.isdir(item_path):
+                        configs_path = os.path.join(item_path, 'configs')
+                        if os.path.exists(configs_path):
+                            return configs_path
+            return None
+        except Exception:
+            return None
+
     def _initialize_shell(self):
         """Initialize the {{ config.app_name }} shell"""
         try:
+            # Set HEAVEN_DATA_DIR if not set
+            heaven_data = os.getenv('HEAVEN_DATA_DIR', '/tmp/heaven_data')
+            os.environ['HEAVEN_DATA_DIR'] = heaven_data
+            os.makedirs(heaven_data, exist_ok=True)
             {% for env_var, default_value in config.environment_vars.items() %}
             # Set {{ env_var }} if not set
             if not os.getenv('{{ env_var }}'):
@@ -53,9 +73,12 @@ class {{ config.get_mcp_server_class_name() }}:
                 os.makedirs('{{ default_value }}', exist_ok=True)
                 {% endif %}
             {% endfor %}
-            
+
+            # Find user config from HEAVEN_DATA_DIR
+            user_config_path = self._find_user_config(heaven_data, '{{ config.get_package_name() }}')
+
             # Get the {{ config.app_name }} shell (TreeShell instance)
-            self.shell = {{ config.factory_function }}()
+            self.shell = {{ config.factory_function }}(user_config_path=user_config_path)
             
         except Exception as e:
             print(f"Warning: Could not initialize {{ config.app_name }} shell: {e}")

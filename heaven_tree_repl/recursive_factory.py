@@ -199,8 +199,8 @@ class {class_name}ConfigLoader({config_loader_name}):
     
     def _get_library_configs_dir(self) -> str:
         \"\"\"Override to use this library's configs instead of parent's.\"\"\"
-        # Point to this library's config directory
-        library_root = Path(__file__).parent.parent
+        # Point to this library's config directory (configs is INSIDE package)
+        library_root = Path(__file__).parent
         return str(library_root / "configs")
 """
         

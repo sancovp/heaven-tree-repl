@@ -5,6 +5,8 @@ Meta Operations module - Variable management and session operations.
 import json
 import datetime
 import sys
+import os
+from pathlib import Path
 
 from . import logger
 
@@ -1151,15 +1153,31 @@ Based on the terminology and concepts in that previous answer, what additional d
             return {"error": f"Failed to generate FULL visualization: {e}"}, False
 
 # ============ HUD OPERATIONS ============
+# JSON-persistent HUD configuration (survives MCP restarts)
+
+HUD_FILE = Path(os.environ.get("HEAVEN_DATA_DIR", "/tmp/heaven_data")) / "hud_config.json"
+
+def _load_hud():
+    """Load HUD config from JSON file."""
+    if HUD_FILE.exists():
+        return json.loads(HUD_FILE.read_text())
+    return {"items": []}
+
+def _save_hud(data):
+    """Save HUD config to JSON file."""
+    HUD_FILE.parent.mkdir(parents=True, exist_ok=True)
+    HUD_FILE.write_text(json.dumps(data, indent=2))
+
 
 def _hud_list(shell) -> str:
     """List current HUD composition."""
-    hud_config = shell.state.get("hud_config", [])
-    if not hud_config:
+    data = _load_hud()
+    hud_items = data.get("items", [])
+    if not hud_items:
         return "HUD is empty. Use hud_add_node or hud_add_decorator to add items."
-    
+
     result = "=== HUD Composition ===\n"
-    for i, item in enumerate(hud_config):
+    for i, item in enumerate(hud_items):
         item_type = item.get("type", "unknown")
         if item_type == "node":
             result += f"[{i}] NODE: {item.get('address', 'no address')}\n"
@@ -1172,62 +1190,74 @@ def _hud_list(shell) -> str:
 
 def _hud_add_node(shell, address: str, position: int = -1) -> str:
     """Add node reference to HUD."""
-    if "hud_config" not in shell.state:
-        shell.state["hud_config"] = []
-    
+    data = _load_hud()
+    hud_items = data.get("items", [])
+
     item = {"type": "node", "address": address}
-    
-    if position == -1 or position >= len(shell.state["hud_config"]):
-        shell.state["hud_config"].append(item)
-        pos = len(shell.state["hud_config"]) - 1
+
+    if position == -1 or position >= len(hud_items):
+        hud_items.append(item)
+        pos = len(hud_items) - 1
     else:
-        shell.state["hud_config"].insert(position, item)
+        hud_items.insert(position, item)
         pos = position
-    
+
+    data["items"] = hud_items
+    _save_hud(data)
     return f"Added node '{address}' to HUD at position {pos}"
 
 
 def _hud_add_decorator(shell, text: str, position: int = -1) -> str:
     """Add decorator text to HUD."""
-    if "hud_config" not in shell.state:
-        shell.state["hud_config"] = []
-    
+    data = _load_hud()
+    hud_items = data.get("items", [])
+
     item = {"type": "freestyle", "content": text}
-    
-    if position == -1 or position >= len(shell.state["hud_config"]):
-        shell.state["hud_config"].append(item)
-        pos = len(shell.state["hud_config"]) - 1
+
+    if position == -1 or position >= len(hud_items):
+        hud_items.append(item)
+        pos = len(hud_items) - 1
     else:
-        shell.state["hud_config"].insert(position, item)
+        hud_items.insert(position, item)
         pos = position
-    
+
+    data["items"] = hud_items
+    _save_hud(data)
     return f"Added decorator to HUD at position {pos}"
 
 
 def _hud_remove(shell, index: int) -> str:
     """Remove item from HUD by index."""
-    hud_config = shell.state.get("hud_config", [])
-    if index < 0 or index >= len(hud_config):
-        return f"Invalid index {index}. HUD has {len(hud_config)} items."
-    
-    removed = shell.state["hud_config"].pop(index)
+    data = _load_hud()
+    hud_items = data.get("items", [])
+
+    if index < 0 or index >= len(hud_items):
+        return f"Invalid index {index}. HUD has {len(hud_items)} items."
+
+    removed = hud_items.pop(index)
+    data["items"] = hud_items
+    _save_hud(data)
     return f"Removed {removed.get('type')} from position {index}"
 
 
 def _hud_reorder(shell, from_index: int, to_index: int) -> str:
     """Move HUD item from one position to another."""
-    hud_config = shell.state.get("hud_config", [])
-    if from_index < 0 or from_index >= len(hud_config):
+    data = _load_hud()
+    hud_items = data.get("items", [])
+
+    if from_index < 0 or from_index >= len(hud_items):
         return f"Invalid from_index {from_index}"
-    if to_index < 0 or to_index >= len(hud_config):
+    if to_index < 0 or to_index >= len(hud_items):
         return f"Invalid to_index {to_index}"
-    
-    item = shell.state["hud_config"].pop(from_index)
-    shell.state["hud_config"].insert(to_index, item)
+
+    item = hud_items.pop(from_index)
+    hud_items.insert(to_index, item)
+    data["items"] = hud_items
+    _save_hud(data)
     return f"Moved item from {from_index} to {to_index}"
 
 
 def _hud_clear(shell) -> str:
     """Clear all HUD items."""
-    shell.state["hud_config"] = []
+    _save_hud({"items": []})
     return "HUD cleared"
